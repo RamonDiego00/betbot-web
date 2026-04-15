@@ -13,15 +13,7 @@ import {
   LogOut,
   Circle
 } from 'lucide-react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-/**
- * Utilitário para mesclar classes Tailwind de forma segura
- */
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import { cn } from '@/lib/utils';
 
 interface SidebarProps {
   serverStatus?: 'online' | 'offline';
@@ -38,15 +30,20 @@ const NAV_ITEMS = [
 export const Sidebar: React.FC<SidebarProps> = ({ serverStatus = 'online' }) => {
   const pathname = usePathname();
 
+  const isRouteActive = (href: string) => {
+    if (href === '/' && pathname !== '/') return false;
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 border-r border-slate-200 bg-white flex flex-col transition-all duration-300">
+    <aside className="fixed left-0 top-0 h-screen w-64 border-r border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800 flex flex-col transition-all duration-300">
       {/* Header com Logo e Status */}
       <div className="p-6 flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-lg">B</span>
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900 font-sans">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white font-sans">
             BetBot
           </h1>
         </div>
@@ -55,8 +52,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ serverStatus = 'online' }) => 
         <div className={cn(
           "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium w-fit border",
           serverStatus === 'online' 
-            ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
-            : "bg-rose-50 text-rose-700 border-rose-200"
+            ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20" 
+            : "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20"
         )}>
           <Circle className={cn(
             "h-2 w-2 fill-current",
@@ -69,7 +66,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ serverStatus = 'online' }) => 
       {/* Navegação Principal */}
       <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = isRouteActive(item.href);
           const Icon = item.icon;
           
           return (
@@ -79,13 +76,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ serverStatus = 'online' }) => 
               className={cn(
                 "group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                 isActive 
-                  ? "bg-slate-100 text-indigo-600" 
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  ? "bg-slate-100 text-indigo-600 dark:bg-slate-800 dark:text-indigo-400" 
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
               )}
             >
               <Icon className={cn(
                 "h-5 w-5",
-                isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"
+                isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300"
               )} />
               {item.label}
             </Link>
@@ -94,17 +91,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ serverStatus = 'online' }) => 
       </nav>
 
       {/* Footer da Sidebar - Configurações e Logout */}
-      <div className="p-4 border-t border-slate-100 space-y-1">
+      <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-1">
         <Link
           href="/settings"
-          className="group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+          className={cn(
+            "group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+            isRouteActive('/settings')
+              ? "bg-slate-100 text-indigo-600 dark:bg-slate-800 dark:text-indigo-400"
+              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+          )}
         >
-          <Settings className="h-5 w-5 text-slate-400 group-hover:text-slate-600" />
+          <Settings className={cn(
+            "h-5 w-5",
+            isRouteActive('/settings') ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300"
+          )} />
           Configurações
         </Link>
         <button
           onClick={() => console.log('logout')}
-          className="w-full group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-rose-50 hover:text-rose-700 transition-colors"
+          className="w-full group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-rose-50 hover:text-rose-700 dark:text-slate-400 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 transition-colors"
         >
           <LogOut className="h-5 w-5 text-slate-400 group-hover:text-rose-500" />
           Sair
