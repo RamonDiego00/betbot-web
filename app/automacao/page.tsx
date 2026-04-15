@@ -192,7 +192,7 @@ export default function Automacao() {
             </div>
 
             {/* Console Body */}
-            <div className=\"p-4 font-mono text-xs leading-relaxed overflow-y-auto max-h-[460px] space-y-1.5\">
+            <div className="p-4 font-mono text-xs leading-relaxed overflow-y-auto max-h-[460px] space-y-1.5">
               {LIVE_LOGS.map((log) => (
                 <div key={log.id} className="flex gap-3 group">
                   <span className="text-slate-600 shrink-0">[{log.time}]</span>

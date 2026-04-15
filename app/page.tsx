@@ -118,7 +118,15 @@ export default function Dashboard() {
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Dashboard</h2>
-          <p className=\"text-slate-500 mt-1 flex items-center gap-2\">\n            <Calendar className=\"h-4 w-4\" />\n            {new Intl.DateTimeFormat('pt-BR', {\n              weekday: 'long',\n              day: 'numeric',\n              month: 'long',\n              year: 'numeric'\n            }).format(new Date()).replace(/^\w/, (c) => c.toUpperCase())}\n          </p>
+          <p className="text-slate-500 mt-1 flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            {new Intl.DateTimeFormat('pt-BR', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric'
+            }).format(new Date()).replace(/^\w/, (c) => c.toUpperCase())}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 shadow-sm flex items-center gap-2">

@@ -46,7 +46,15 @@ const BET_HISTORY: Bet[] = [
 
 // --- COMPONENTES AUXILIARES ---
 
-const StatCard = ({ label, value, icon: Icon, color, bg }: any) => (
+interface StatCardProps {
+  label: string;
+  value: string;
+  icon: React.ElementType;
+  color: string;
+  bg: string;
+}
+
+const StatCard = ({ label, value, icon: Icon, color, bg }: StatCardProps) => (
   <div className="bg-white p-5 rounded-xl border border-slate-200 flex items-center gap-4 shadow-sm hover:border-indigo-100 transition-colors">
     <div className={cn("p-3 rounded-lg", bg)}>
       <Icon className={cn("h-6 w-6", color)} />
