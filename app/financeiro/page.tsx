@@ -37,9 +37,9 @@ interface ProgressCircleProps {
 
 // --- MOCK DATA ---
 const OVERVIEW_CARDS = [
-  { label: 'Total de Depósitos', value: 'R$ 8.500,00', icon: Plus, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-  { label: 'Total de Saques', value: 'R$ 3.200,00', icon: ArrowDownRight, color: 'text-amber-600', bg: 'bg-amber-50' },
-  { label: 'Lucro Médio Mensal', value: 'R$ 1.840,00', icon: ArrowUpRight, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  { label: 'Total de Depósitos', value: 'R$ 8.500,00', icon: Plus, color: 'text-indigo-600', bg: 'bg-white border border-slate-800' },
+  { label: 'Total de Saques', value: 'R$ 3.200,00', icon: ArrowDownRight, color: 'text-rose-600', bg: 'bg-white border border-slate-800' },
+  { label: 'Lucro Médio Mensal', value: 'R$ 1.840,00', icon: ArrowUpRight, color: 'text-emerald-600', bg: 'bg-white border border-slate-800' },
 ];
 
 const MONTHLY_PROFIT_DATA: MonthlyData[] = [
@@ -69,7 +69,7 @@ const GOALS = {
 const ProgressCircle = ({ current, target, label, color }: ProgressCircleProps) => {
   const percentage = Math.min((current / target) * 100, 100);
   return (
-    <div className="flex flex-col items-center gap-2 p-4 bg-white rounded-xl border border-slate-200">
+    <div className="flex flex-col items-center gap-2 p-4 bg-white rounded-xl border border-slate-800">
       <div className="relative h-24 w-24 flex items-center justify-center">
         <svg className="h-full w-full" viewBox="0 0 100 100">
           <circle className="text-slate-100 stroke-current" strokeWidth="8" fill="transparent" r="40" cx="50" cy="50" />
@@ -100,10 +100,10 @@ export default function Financeiro() {
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight font-sans">Financeiro</h2>
-          <p className="text-slate-500 mt-1">Gerencie seus depósitos, saques e metas financeiras.</p>
+          <p className="text-slate-500 mt-1 font-medium">Gerencie seus depósitos, saques e metas financeiras.</p>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-800 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
             <Plus className="h-4 w-4" /> Novo Registro
           </button>
           <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-all shadow-sm">
@@ -116,7 +116,7 @@ export default function Financeiro() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 flex flex-col gap-4">
           {OVERVIEW_CARDS.map((card, idx) => (
-            <div key={idx} className="bg-white p-5 rounded-xl border border-slate-200 flex items-center gap-4 shadow-sm">
+            <div key={idx} className="bg-white p-5 rounded-xl border border-slate-800 flex items-center gap-4 shadow-sm">
               <div className={cn("p-3 rounded-lg", card.bg)}>
                 <card.icon className={cn("h-6 w-6", card.color)} />
               </div>
@@ -128,10 +128,10 @@ export default function Financeiro() {
           ))}
         </div>
 
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-800 shadow-sm flex flex-col justify-between">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-bold text-slate-900">Histórico de Lucro por Mês</h3>
-            <select className="text-xs font-bold bg-slate-50 border-0 rounded p-1 text-slate-500">
+            <select className="text-xs font-bold bg-white border border-slate-800 rounded p-1 text-slate-500 outline-none">
               <option>2026</option>
               <option>2025</option>
             </select>
@@ -164,76 +164,82 @@ export default function Financeiro() {
               <button className="text-slate-400 hover:text-slate-600 transition-colors"><Filter className="h-4 w-4" /></button>
             </div>
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tipo</th>
-                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Banca</th>
-                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Valor</th>
-                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Data</th>
-                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {TRANSACTIONS.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer group">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        {tx.type === 'deposito' ? (
-                          <Plus className="h-3.5 w-3.5 text-emerald-500" />
-                        ) : (
-                          <ArrowDownRight className="h-3.5 w-3.5 text-amber-500" />
-                        )}
-                        <span className="text-xs font-bold capitalize text-slate-700">{tx.type}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-xs font-semibold text-slate-600">{tx.bank}</td>
-                    <td className={cn(
-                      "px-6 py-4 text-xs font-black",
-                      tx.type === 'deposito' ? "text-emerald-600" : "text-amber-600"
-                    )}>{tx.value}</td>
-                    <td className="px-6 py-4 text-xs font-medium text-slate-400">{tx.date}</td>
-                    <td className="px-6 py-4 text-right">
-                      <span className={cn(
-                        "inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full",
-                        tx.status === 'concluido' ? "bg-emerald-50 text-emerald-600" : "bg-slate-50 text-slate-500"
-                      )}>
-                        {tx.status === 'concluido' ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
-                        {tx.status === 'concluido' ? 'Concluído' : 'Pendente'}
-                      </span>
-                    </td>
+          <div className="bg-white rounded-xl border border-slate-800 overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-white border-b border-slate-800">
+                    <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tipo</th>
+                    <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Banca</th>
+                    <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Valor</th>
+                    <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Data</th>
+                    <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  {TRANSACTIONS.map((t) => (
+                    <tr key={t.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <span className={cn(
+                          "text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-slate-800 bg-white",
+                          t.type === 'deposito' 
+                            ? "text-emerald-700" 
+                            : "text-rose-700"
+                        )}>
+                          {t.type}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-xs font-bold text-slate-700">{t.bank}</td>
+                      <td className="px-6 py-4 text-xs font-black text-slate-900">{t.value}</td>
+                      <td className="px-6 py-4 text-xs text-slate-500">{t.date}</td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end items-center gap-1.5">
+                          {t.status === 'concluido' ? (
+                            <>
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                              <span className="text-[10px] font-bold text-emerald-700 uppercase">Concluído</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="h-3.5 w-3.5 text-amber-500" />
+                              <span className="text-[10px] font-bold text-amber-600 uppercase">Pendente</span>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
-        {/* BLOCO 3: Gráfico de Metas (Objetivo de Lucro e Limite de Perda) */}
+        {/* BLOCO 3: Metas Financeiras */}
         <div className="space-y-4">
-          <h3 className="font-bold text-slate-900">Objetivos do Mês</h3>
+          <h3 className="font-bold text-slate-900 px-1">Metas e Limites</h3>
           <div className="grid grid-cols-1 gap-4">
             <ProgressCircle 
               current={GOALS.profit.current} 
               target={GOALS.profit.target} 
               label={GOALS.profit.label} 
-              color="text-emerald-500"
+              color="text-emerald-500" 
             />
             <ProgressCircle 
               current={GOALS.loss.current} 
               target={GOALS.loss.limit} 
               label={GOALS.loss.label} 
-              color="text-rose-500"
+              color="text-rose-500" 
             />
             
-            {/* Bloco 4 (Informativo): Recomendação de Gestão */}
-            <div className="p-5 bg-indigo-50/50 rounded-xl border border-indigo-100 flex gap-4">
-              <AlertCircle className="h-5 w-5 text-indigo-600 shrink-0" />
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Dica de Gestão</p>
-                <p className="text-[11px] leading-relaxed text-indigo-900/70 font-medium italic">
-                  &ldquo;Você já atingiu 75% da sua meta de lucro mensal. Considere reduzir a stake para garantir os ganhos atuais.&rdquo;
+            <div className="bg-white border border-slate-800 rounded-xl p-5 shadow-sm relative overflow-hidden">
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="h-4 w-4 text-indigo-600" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Dica de Gestão</span>
+                </div>
+                <p className="text-xs font-medium leading-relaxed text-slate-700">
+                  Você está a apenas <span className="font-black">R$ 500,00</span> de atingir sua meta mensal. Mantenha a disciplina na stake!
                 </p>
               </div>
             </div>
