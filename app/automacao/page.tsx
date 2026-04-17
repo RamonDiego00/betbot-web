@@ -11,9 +11,7 @@ import {
   Play, 
   Pause, 
   RotateCcw,
-  CheckCircle2,
   Clock,
-  AlertTriangle,
   Zap,
   ChevronRight
 } from 'lucide-react';
@@ -39,10 +37,10 @@ interface LogEntry {
 
 // --- MOCK DATA ---
 const AUTOMATION_STATS = [
-  { label: 'Status do Server', value: 'Online', icon: Activity, color: 'text-emerald-600', bg: 'bg-emerald-50', subtext: 'Latência: 42ms' },
-  { label: 'Device Android', value: 'Conectado', icon: Smartphone, color: 'text-indigo-600', bg: 'bg-indigo-50', subtext: 'ID: emulator-5554' },
-  { label: 'Saúde do Fluxo', value: 'Estável', icon: ShieldCheck, color: 'text-emerald-600', bg: 'bg-emerald-50', subtext: '98% de sucesso' },
-  { label: 'Execuções Hoje', value: '142', icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50', subtext: 'Média 12/hora' },
+  { label: 'Status do Server', value: 'Online', icon: Activity, color: 'text-emerald-700', bg: 'bg-white border border-slate-800', subtext: 'Latência: 42ms' },
+  { label: 'Device Android', value: 'Conectado', icon: Smartphone, color: 'text-indigo-600', bg: 'bg-white border border-slate-800', subtext: 'ID: emulator-5554' },
+  { label: 'Saúde do Fluxo', value: 'Estável', icon: ShieldCheck, color: 'text-emerald-700', bg: 'bg-white border border-slate-800', subtext: '98% de sucesso' },
+  { label: 'Execuções Hoje', value: '142', icon: Zap, color: 'text-amber-500', bg: 'bg-white border border-slate-800', subtext: 'Média 12/hora' },
 ];
 
 const EXECUTION_QUEUE: ExecutionItem[] = [
@@ -90,14 +88,15 @@ export default function Automacao() {
       {/* Header com Controles Master */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Automação Mobile</h2>
-          <p className="text-slate-500 mt-1 flex items-center gap-2">
+          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight font-sans">Automação Mobile</h2>
+          <p className="text-slate-500 mt-1 flex items-center gap-2 font-medium">
             <Cpu className="h-4 w-4" />
             Controlando Server Local via Maestro Flow
           </p>
         </div>
         <div className="flex gap-2">
           <button 
+            type="button"
             onClick={() => setIsPaused(!isPaused)}
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm",
@@ -107,7 +106,7 @@ export default function Automacao() {
             {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
             {isPaused ? 'Retomar Fluxo' : 'Pausar Automação'}
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-semibold transition-all shadow-sm">
+          <button type="button" className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-semibold transition-all shadow-sm">
             <RotateCcw className="h-4 w-4" /> Reiniciar Server
           </button>
         </div>
@@ -161,7 +160,7 @@ export default function Automacao() {
                 </div>
               </div>
             ))}
-            <button className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 text-xs font-bold hover:border-indigo-300 hover:text-indigo-500 transition-all">
+            <button type="button" className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 text-xs font-bold hover:border-indigo-300 hover:text-indigo-500 transition-all">
               Ver Histórico de Execução
             </button>
           </div>
@@ -192,7 +191,7 @@ export default function Automacao() {
             </div>
 
             {/* Console Body */}
-            <div className=\"p-4 font-mono text-xs leading-relaxed overflow-y-auto max-h-[460px] space-y-1.5\">
+            <div className="p-4 font-mono text-xs leading-relaxed overflow-y-auto max-h-[460px] space-y-1.5">
               {LIVE_LOGS.map((log) => (
                 <div key={log.id} className="flex gap-3 group">
                   <span className="text-slate-600 shrink-0">[{log.time}]</span>
@@ -233,7 +232,7 @@ export default function Automacao() {
                 </div>
               </div>
             </div>
-            <button className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[10px] font-bold uppercase transition-colors flex items-center gap-2">
+            <button type="button" className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[10px] font-bold uppercase transition-colors flex items-center gap-2">
               Espelhar Tela <ChevronRight className="h-3 w-3" />
             </button>
           </div>
