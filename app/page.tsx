@@ -6,11 +6,11 @@ import {
   TrendingDown, 
   Wallet, 
   Percent, 
-  ChevronDown,
-  ChevronUp,
-  Star,
-  Activity,
-  Calendar
+  ChevronDown, 
+  ChevronUp, 
+  Star, 
+  Activity, 
+  Calendar 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -52,7 +52,7 @@ const MATCHES_OF_THE_DAY: LeagueGroup[] = [
 ];
 
 const TeamLogo = ({ name }: { name: string }) => (
-  <div className="h-6 w-6 rounded-full bg-slate-50 flex items-center justify-center border border-slate-800/10 overflow-hidden">
+  <div className="h-6 w-6 rounded-full bg-slate-50 flex items-center justify-center border border-slate-800/10 overflow-hidden shadow-sm">
     <span className="text-[10px] font-black text-slate-400">{name.charAt(0)}</span>
   </div>
 );
