@@ -2,7 +2,20 @@ import axios from 'axios';
 import { authUtils } from '../auth';
 import { toast } from 'sonner';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+const getApiBaseUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL;
+  }
+  
+  // No desenvolvimento, deixamos vazio para usar o proxy do Next.js (rewrites)
+  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+    return '';
+  }
+  
+  return 'http://localhost:8080';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

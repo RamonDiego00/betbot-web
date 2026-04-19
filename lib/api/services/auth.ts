@@ -1,7 +1,8 @@
 import { apiClient } from '../client';
 
 export interface DebugLoginResponse {
-  token: string;
+  token?: string;
+  access_token?: string;
 }
 
 export const authService = {

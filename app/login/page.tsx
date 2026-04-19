@@ -18,10 +18,17 @@ export default function LoginPage() {
   const handleDebugLogin = async () => {
     setIsDebugLoading(true);
     try {
-      const response = await authService.debugLogin('ramon@betbot.com');
-      authUtils.setToken(response.token);
-      toast.success('Login em modo Debug realizado!');
-      window.location.href = '/';
+      const response = await authService.debugLogin('ramondiego856@gmail.com');
+      const token = response.token || response.access_token;
+      
+      if (token) {
+        authUtils.setToken(token);
+        toast.success('Login em modo Debug realizado!');
+        window.location.href = '/';
+      } else {
+        console.error('No token found in response:', response);
+        toast.error('Falha no login debug: Token não recebido');
+      }
     } catch (error) {
       toast.error('Falha no login debug');
       console.error(error);
