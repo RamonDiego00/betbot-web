@@ -1,33 +1,59 @@
-import type { Metadata } from "next";
+"use client";
+
 import { Inter } from "next/font/google";
 import Sidebar from "@/components/Sidebar";
 import "./globals.css";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { authUtils } from "@/lib/auth";
+import { Toaster } from "sonner";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
 });
 
-export const metadata: Metadata = {
-  title: "BetBot - Dashboard",
-  description: "Gerenciador de Apostas Esportivas e Automação",
-};
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  const isAuthPage = pathname === "/login" || pathname === "/auth/callback";
+
+  useEffect(() => {
+    const token = authUtils.getToken();
+    if (!token && !isAuthPage) {
+      router.push("/login");
+    } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsCheckingAuth(false);
+    }
+  }, [pathname, router, isAuthPage]);
+
+  if (isCheckingAuth && !isAuthPage) {
+    return (
+      <html lang="pt-BR" className={`${inter.variable} h-full antialiased`}>
+        <body className="min-h-full bg-slate-50 flex items-center justify-center">
+          <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
+        </body>
+      </html>
+    );
+  }
+
   return (
     <html lang="pt-BR" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full bg-slate-50 font-sans text-slate-900">
+        <Toaster position="top-right" richColors />
         <div className="flex">
-          {/* Sidebar fixa à esquerda */}
-          <Sidebar serverStatus="online" />
+          {!isAuthPage && <Sidebar serverStatus="online" />}
 
-          {/* Área de conteúdo principal */}
-          <main className="flex-1 ml-64 min-h-screen p-8">
-            <div className="max-w-7xl mx-auto">
+          <main className={isAuthPage ? "flex-1 min-h-screen" : "flex-1 ml-64 min-h-screen p-8"}>
+            <div className={isAuthPage ? "" : "max-w-7xl mx-auto"}>
               {children}
             </div>
           </main>

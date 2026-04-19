@@ -1,59 +1,27 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   TrendingUp, 
-  TrendingDown, 
   Wallet, 
   Percent, 
   ChevronDown, 
   ChevronUp, 
   Star, 
   Activity, 
-  Calendar 
+  Calendar,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { dashboardService } from '@/lib/api/services/dashboard';
+import { Game, SummaryKPIs, Bankroll } from '@/types/api';
 
 // --- TYPES ---
-interface Match {
-  id: number; home: string; away: string; time: string; status: 'not_started' | 'live';
-  minute?: string; scoreHome: string; scoreAway: string;
-}
-interface LeagueGroup { league: string; country: string; matches: Match[]; }
 interface StatCardProps { label: string; value: string; icon: React.ElementType; trend: string; type: 'neutral' | 'success' | 'danger'; }
-
-// --- MOCK DATA ---
-const FINANCIAL_STATS: StatCardProps[] = [
-  { label: 'Saldo Total', value: 'R$ 15.240,00', icon: Wallet, trend: '+2.5%', type: 'neutral' },
-  { label: 'Lucro (Mês)', value: 'R$ 2.450,00', icon: TrendingUp, trend: '+12%', type: 'success' },
-  { label: 'Perdas (Mês)', value: 'R$ 840,00', icon: TrendingDown, trend: '-5%', type: 'danger' },
-  { label: 'ROI (Geral)', value: '18.4%', icon: Percent, trend: '+1.2%', type: 'success' },
-];
-
-const MATCHES_OF_THE_DAY: LeagueGroup[] = [
-  {
-    league: 'Champions League', country: 'Europa',
-    matches: [
-      { id: 1, home: 'Real Madrid', away: 'Man. City', time: '16:00', status: 'not_started', scoreHome: '-', scoreAway: '-' },
-      { id: 2, home: 'Bayern Munich', away: 'Arsenal', time: '16:00', status: 'not_started', scoreHome: '-', scoreAway: '-' },
-    ]
-  },
-  {
-    league: 'Premier League', country: 'Inglaterra',
-    matches: [{ id: 3, home: 'Liverpool', away: 'Chelsea', time: '14:30', status: 'live', minute: '34', scoreHome: '1', scoreAway: '0' }]
-  },
-  {
-    league: 'Brasileirão Serie A', country: 'Brasil',
-    matches: [
-      { id: 4, home: 'Flamengo', away: 'Palmeiras', time: '21:30', status: 'not_started', scoreHome: '-', scoreAway: '-' },
-      { id: 5, home: 'São Paulo', away: 'Corinthians', time: '16:00', status: 'not_started', scoreHome: '-', scoreAway: '-' },
-    ]
-  }
-];
 
 const TeamLogo = ({ name }: { name: string }) => (
   <div className="h-6 w-6 rounded-full bg-slate-50 flex items-center justify-center border border-slate-800/10 overflow-hidden shadow-sm">
-    <span className="text-[10px] font-black text-slate-400">{name.charAt(0)}</span>
+    <span className="text-[10px] font-black text-slate-400">{name?.charAt(0) || '?'}</span>
   </div>
 );
 
@@ -79,12 +47,64 @@ const StatCard = ({ label, value, icon: Icon, trend, type }: StatCardProps) => (
 );
 
 export default function Dashboard() {
-  const [expandedLeagues, setExpandedLeagues] = useState<string[]>(['Champions League', 'Premier League', 'Brasileirão Serie A']);
+  const [expandedLeagues, setExpandedLeagues] = useState<string[]>([]);
+  const [games, setGames] = useState<Game[]>([]);
+  const [summary, setSummary] = useState<SummaryKPIs | null>(null);
+  const [bankrolls, setBankrolls] = useState<Bankroll[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [gamesData, summaryData, bankrollsData] = await Promise.all([
+          dashboardService.getTodayGames(),
+          dashboardService.getSummary(),
+          dashboardService.getBankrolls()
+        ]);
+        setGames(gamesData);
+        setSummary(summaryData);
+        setBankrolls(bankrollsData);
+        
+        // Expand leagues that have matches
+        const leagues = Array.from(new Set(gamesData.map(g => g.league)));
+        setExpandedLeagues(leagues);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
   const toggleLeague = (league: string) => setExpandedLeagues(prev => prev.includes(league) ? prev.filter(l => l !== league) : [...prev, league]);
 
   const formattedDate = new Intl.DateTimeFormat('pt-BR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   }).format(new Date()).replace(/^\w/, (c) => c.toUpperCase());
+
+  const gamesByLeague = games.reduce((acc, game) => {
+    if (!acc[game.league]) {
+      acc[game.league] = [];
+    }
+    acc[game.league].push(game);
+    return acc;
+  }, {} as Record<string, Game[]>);
+
+  const stats: StatCardProps[] = summary ? [
+    { label: 'Saldo Total', value: `R$ ${summary.currentBankroll.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Wallet, trend: 'N/A', type: 'neutral' },
+    { label: 'Lucro (Geral)', value: `R$ ${summary.totalProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: TrendingUp, trend: `${summary.roi}% ROI`, type: summary.totalProfit >= 0 ? 'success' : 'danger' },
+    { label: 'Win Rate', value: `${summary.winRate}%`, icon: Percent, trend: 'N/A', type: 'neutral' },
+    { label: 'Apostas Totais', value: summary.totalBets.toString(), icon: Activity, trend: 'N/A', type: 'neutral' },
+  ] : [];
+
+  if (loading) {
+    return (
+      <div className="h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
@@ -99,7 +119,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-3">
           <div className="px-4 py-2 bg-white border border-slate-800 rounded-lg text-xs font-black uppercase text-slate-900 shadow-sm flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            Banca: R$ 10.000,00
+            Banca: R$ {summary?.currentBankroll.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
           <button type="button" className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm">
             Nova Aposta
@@ -108,7 +128,9 @@ export default function Dashboard() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {FINANCIAL_STATS.map((stat, idx) => <StatCard key={idx} {...stat} />)}
+        {stats.map((stat, idx) => (
+          <StatCard key={idx} {...stat} />
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -118,38 +140,47 @@ export default function Dashboard() {
           </div>
 
           <div className="bg-white rounded-xl border border-slate-800 overflow-hidden shadow-sm">
-            {MATCHES_OF_THE_DAY.map((group, idx) => {
-              const isExpanded = expandedLeagues.includes(group.league);
+            {Object.keys(gamesByLeague).length === 0 ? (
+              <div className="p-8 text-center text-slate-500 text-sm">Nenhum jogo encontrado para hoje.</div>
+            ) : Object.entries(gamesByLeague).map(([league, leagueGames], idx) => {
+              const isExpanded = expandedLeagues.includes(league);
+              
               return (
                 <div key={idx} className="border-b border-slate-800 last:border-0">
-                  <div onClick={() => toggleLeague(group.league)} className="bg-slate-50 px-4 py-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors border-b border-slate-800/10">
+                  <div onClick={() => toggleLeague(league)} className="bg-slate-50 px-4 py-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors border-b border-slate-800/10">
                     <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{group.country}:</span>
-                      <span className="text-[11px] font-black text-slate-900">{group.league}</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Liga:</span>
+                      <span className="text-[11px] font-black text-slate-900">{league}</span>
                     </div>
                     {isExpanded ? <ChevronUp className="h-4 w-4 text-slate-800" /> : <ChevronDown className="h-4 w-4 text-slate-800" />}
                   </div>
 
                   {isExpanded && (
                     <div className="divide-y divide-slate-100">
-                      {group.matches.map((match) => (
-                        <div key={match.id} className="flex items-center py-3.5 px-4 hover:bg-slate-50 transition-colors cursor-pointer group">
+                      {leagueGames.map((game) => (
+                        <div key={game.id} className="flex items-center py-3.5 px-4 hover:bg-slate-50 transition-colors cursor-pointer group">
                           <div className="w-14 flex flex-col items-start justify-center font-black">
-                            {match.status === 'live' ? <span className="text-[10px] text-rose-600 animate-pulse">{match.minute}'</span> : <span className="text-[10px] text-slate-400">{match.time}</span>}
+                            {game.status === 'IN_PROGRESS' ? (
+                              <span className="text-[10px] text-rose-600 animate-pulse">AO VIVO</span>
+                            ) : (
+                              <span className="text-[10px] text-slate-400">
+                                {new Date(game.startTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            )}
                           </div>
                           <div className="flex-1 flex items-center justify-center gap-6 px-4">
                             <div className="flex items-center justify-end gap-3 flex-1">
-                              <span className="text-xs font-bold text-slate-900 text-right">{match.home}</span>
-                              <TeamLogo name={match.home} />
+                              <span className="text-xs font-bold text-slate-900 text-right">{game.homeTeam}</span>
+                              <TeamLogo name={game.homeTeam} />
                             </div>
                             <div className="flex items-center gap-2 min-w-[50px] justify-center bg-slate-900 px-2 py-1 rounded border border-slate-800 text-white shadow-sm">
-                              <span className="text-xs font-black">{match.scoreHome}</span>
+                              <span className="text-xs font-black">-</span>
                               <span className="text-slate-500 text-[10px] font-black">-</span>
-                              <span className="text-xs font-black">{match.scoreAway}</span>
+                              <span className="text-xs font-black">-</span>
                             </div>
                             <div className="flex items-center justify-start gap-3 flex-1">
-                              <TeamLogo name={match.away} />
-                              <span className="text-xs font-bold text-slate-900 text-left">{match.away}</span>
+                              <TeamLogo name={game.awayTeam} />
+                              <span className="text-xs font-bold text-slate-900 text-left">{game.awayTeam}</span>
                             </div>
                           </div>
                           <div className="w-6 flex justify-end"><Star className="h-3 w-3 text-slate-200 group-hover:text-indigo-600 transition-colors" /></div>
@@ -164,27 +195,40 @@ export default function Dashboard() {
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest px-1">Status Diário</h3>
+          <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest px-1">Status de Banca</h3>
           <div className="bg-white rounded-xl border border-slate-800 p-6 space-y-6 shadow-sm">
-            <div className="space-y-4">
-              <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400">
-                <span>Total Hoje</span>
-                <span className="text-slate-900">12 Apostas</span>
-              </div>
-              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden flex border border-slate-800/10">
-                <div className="bg-emerald-500 h-full" style={{ width: '50%' }} />
-                <div className="bg-rose-500 h-full" style={{ width: '16%' }} />
-                <div className="bg-slate-300 h-full" style={{ width: '34%' }} />
-              </div>
-              <div className="grid grid-cols-3 gap-2 pt-1">
-                <div className="text-center border-r border-slate-100"><p className="text-[9px] font-black text-slate-400 uppercase">Win</p><p className="text-xs font-black text-emerald-600">6</p></div>
-                <div className="text-center border-r border-slate-100"><p className="text-[9px] font-black text-slate-400 uppercase">Loss</p><p className="text-xs font-black text-rose-600">2</p></div>
-                <div className="text-center"><p className="text-[9px] font-black text-slate-400 uppercase">Pend.</p><p className="text-xs font-black text-slate-900">4</p></div>
+            <div className="p-4 bg-slate-50 rounded-lg border border-slate-800/10">
+              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Saldos por Casa</h4>
+              <div className="space-y-2.5">
+                {bankrolls.length === 0 ? (
+                  <div className="text-xs text-slate-500 italic">Nenhum saldo encontrado.</div>
+                ) : bankrolls.map(br => (
+                  <div key={br.id} className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-slate-700">{br.platform}</span>
+                    <span className="text-xs font-black text-slate-900">
+                      {br.currency} {br.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
+
             <div className="pt-6 border-t border-slate-800/10 space-y-3">
-              <div className="flex justify-between items-center"><span className="text-[10px] font-black text-slate-400 uppercase">Stake</span><span className="text-xs font-black text-slate-900 underline decoration-indigo-600 decoration-2 underline-offset-4">R$ 150,00</span></div>
-              <div className="flex justify-between items-center"><span className="text-[10px] font-black text-slate-400 uppercase">ROI</span><span className="text-xs font-black text-emerald-600">+4.2%</span></div>
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] font-black text-slate-400 uppercase">ROI Geral</span>
+                <span className={cn(
+                  "text-xs font-black",
+                  (summary?.roi ?? 0) >= 0 ? "text-emerald-600" : "text-rose-600"
+                )}>
+                  {summary?.roi}%
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] font-black text-slate-400 uppercase">Win Rate</span>
+                <span className="text-xs font-black text-slate-900 underline decoration-indigo-600 decoration-2 underline-offset-4">
+                  {summary?.winRate}%
+                </span>
+              </div>
             </div>
           </div>
         </div>
