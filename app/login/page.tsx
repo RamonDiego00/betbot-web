@@ -1,11 +1,33 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
+import { Bug, Loader2 } from 'lucide-react';
+import { authService } from '@/lib/api/services/auth';
+import { authUtils } from '@/lib/auth';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
+  const [isDebugLoading, setIsDebugLoading] = useState(false);
+  const isDev = process.env.NODE_ENV === 'development';
+
   const handleGoogleLogin = () => {
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
     window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
+  };
+
+  const handleDebugLogin = async () => {
+    setIsDebugLoading(true);
+    try {
+      const response = await authService.debugLogin('ramon@betbot.com');
+      authUtils.setToken(response.token);
+      toast.success('Login em modo Debug realizado!');
+      window.location.href = '/';
+    } catch (error) {
+      toast.error('Falha no login debug');
+      console.error(error);
+    } finally {
+      setIsDebugLoading(false);
+    }
   };
 
   return (
@@ -44,6 +66,17 @@ export default function LoginPage() {
             </svg>
             Entrar com Google
           </button>
+
+          {isDev && (
+            <button
+              onClick={handleDebugLogin}
+              disabled={isDebugLoading}
+              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-500 font-bold hover:bg-slate-100 hover:border-slate-300 transition-all shadow-sm group"
+            >
+              {isDebugLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Bug className="h-5 w-5" />}
+              Entrar em modo Debug
+            </button>
+          )}
         </div>
 
         <div className="pt-6 border-t border-slate-100">

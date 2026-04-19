@@ -12,7 +12,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Minus,
-  Loader2
+  Loader2,
+  Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ticketService } from '@/lib/api/services/ticket';
@@ -162,12 +163,16 @@ export default function Historico() {
                       "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
                       bet.result === 'WIN' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
                       bet.result === 'LOSS' ? "bg-rose-50 text-rose-600 border border-rose-100" :
-                      "bg-slate-100 text-slate-500 border border-slate-200"
+                      bet.result === 'VOID' ? "bg-slate-100 text-slate-600 border border-slate-200" :
+                      "bg-amber-50 text-amber-600 border border-amber-100" // PENDING
                     )}>
                       {bet.result === 'WIN' ? <ArrowUpRight className="h-3 w-3" /> : 
                        bet.result === 'LOSS' ? <ArrowDownRight className="h-3 w-3" /> : 
-                       <Minus className="h-3 w-3" />}
-                      {bet.result === 'WIN' ? 'Win' : bet.result === 'LOSS' ? 'Loss' : 'Void'}
+                       bet.result === 'VOID' ? <Minus className="h-3 w-3" /> :
+                       <Clock className="h-3 w-3" />}
+                      {bet.result === 'WIN' ? 'Win' : 
+                       bet.result === 'LOSS' ? 'Loss' : 
+                       bet.result === 'VOID' ? 'Void' : 'Pending'}
                     </span>
                   </td>
                   <td className={cn(

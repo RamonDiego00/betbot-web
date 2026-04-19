@@ -4,6 +4,8 @@ import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
+import { authUtils } from '@/lib/auth';
+
 export default function AuthCallback() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -12,7 +14,7 @@ export default function AuthCallback() {
     const token = searchParams.get('token');
     
     if (token) {
-      localStorage.setItem('betbot_jwt', token);
+      authUtils.setToken(token);
       router.push('/');
     } else {
       router.push('/login');

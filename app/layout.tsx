@@ -6,6 +6,8 @@ import "./globals.css";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { authUtils } from "@/lib/auth";
+import { Toaster } from "sonner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -24,7 +26,7 @@ export default function RootLayout({
   const isAuthPage = pathname === "/login" || pathname === "/auth/callback";
 
   useEffect(() => {
-    const token = localStorage.getItem("betbot_jwt");
+    const token = authUtils.getToken();
     if (!token && !isAuthPage) {
       router.push("/login");
     } else {
@@ -46,6 +48,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full bg-slate-50 font-sans text-slate-900">
+        <Toaster position="top-right" richColors />
         <div className="flex">
           {!isAuthPage && <Sidebar serverStatus="online" />}
 

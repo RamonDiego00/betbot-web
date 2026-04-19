@@ -14,6 +14,7 @@ import {
   Circle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { authUtils } from '@/lib/auth';
 
 interface SidebarProps {
   serverStatus?: 'online' | 'offline';
@@ -108,7 +109,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ serverStatus = 'online' }) => 
           Configurações
         </Link>
         <button
-          onClick={() => console.log('logout')}
+          onClick={() => authUtils.logout()}
           className="w-full group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-rose-50 hover:text-rose-700 dark:text-slate-400 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 transition-colors"
         >
           <LogOut className="h-5 w-5 text-slate-400 group-hover:text-rose-500" />
