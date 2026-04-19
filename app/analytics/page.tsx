@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, 
   Trophy, 
@@ -10,52 +10,12 @@ import {
   Lightbulb,
   ArrowUpRight,
   Target,
-  LineChart
+  LineChart,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-// --- TYPES ---
-interface MarketStat {
-  market: string;
-  roi: string;
-  profit: string;
-  winRate: number;
-}
-
-interface LeagueStat {
-  league: string;
-  profit: string;
-  status: 'positive' | 'negative';
-  rank: number;
-}
-
-interface OddsRange {
-  range: string;
-  winRate: number;
-  totalBets: number;
-}
-
-// --- MOCK DATA PARA FEEDBACK ---
-const MARKET_STATS: MarketStat[] = [
-  { market: 'Match Result (ML)', roi: '+12.5%', profit: 'R$ 1.250', winRate: 68 },
-  { market: 'Over 2.5 Gols', roi: '+8.2%', profit: 'R$ 840', winRate: 62 },
-  { market: 'AH +0.5 (Dupla Hipótese)', roi: '+15.4%', profit: 'R$ 1.540', winRate: 74 },
-  { market: 'Ambos Marcam (BTTS)', roi: '-2.1%', profit: '-R$ 210', winRate: 48 },
-];
-
-const TOP_LEAGUES: LeagueStat[] = [
-  { league: 'Premier League', profit: '+R$ 2.450', status: 'positive', rank: 1 },
-  { league: 'Champions League', profit: '+R$ 1.840', status: 'positive', rank: 2 },
-  { league: 'Brasileirão Serie A', profit: '+R$ 1.200', status: 'positive', rank: 3 },
-  { league: 'Bundesliga', profit: '-R$ 420', status: 'negative', rank: 4 },
-];
-
-const ODDS_EFFICIENCY: OddsRange[] = [
-  { range: '1.20 - 1.50', winRate: 82, totalBets: 340 },
-  { range: '1.51 - 1.80', winRate: 64, totalBets: 480 },
-  { range: '1.81 - 2.20', winRate: 54, totalBets: 290 },
-  { range: '2.21+', winRate: 32, totalBets: 138 },
-];
+import { reportService } from '@/lib/api/services/report';
+import { StrategyPerformance } from '@/types/api';
 
 // --- COMPONENTES AUXILIARES ---
 
@@ -75,6 +35,33 @@ const PerformanceIndicator = ({ label, winRate, color }: { label: string, winRat
 );
 
 export default function Analytics() {
+  const [performances, setPerformances] = useState<StrategyPerformance[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const data = await reportService.getStrategyPerformance();
+        setPerformances(data);
+      } catch (error) {
+        console.error("Error fetching analytics data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  const topStrategies = [...performances].sort((a, b) => a.ranking - b.ranking).slice(0, 5);
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
       {/* Header */}
@@ -91,31 +78,33 @@ export default function Analytics() {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* BLOCO 1: Eficiência por Mercado */}
+        {/* BLOCO 1: Eficiência por Estratégia */}
         <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
           <div className="flex items-center justify-between border-b border-slate-50 pb-4">
             <h3 className="font-bold text-slate-900 flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-indigo-500" />
-              ROI por Mercado
+              ROI por Estratégia
             </h3>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Últimos 30 Dias</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Geral</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-6">
-              {MARKET_STATS.map((stat, idx) => (
+              {performances.length === 0 ? (
+                <div className="text-xs text-slate-500">Nenhuma estratégia encontrada.</div>
+              ) : performances.map((stat, idx) => (
                 <div key={idx} className="group cursor-default">
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs font-bold text-slate-500 group-hover:text-indigo-600 transition-colors">{stat.market}</span>
+                    <span className="text-xs font-bold text-slate-500 group-hover:text-indigo-600 transition-colors">{stat.strategyName}</span>
                     <span className={cn(
                       "text-xs font-black",
-                      stat.roi.startsWith('+') ? "text-emerald-600" : "text-rose-600"
-                    )}>{stat.roi} ROI</span>
+                      stat.roi >= 0 ? "text-emerald-600" : "text-rose-600"
+                    )}>{stat.roi >= 0 ? '+' : ''}{stat.roi}% ROI</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="flex-1 bg-slate-100 h-1.5 rounded-full overflow-hidden">
                       <div 
-                        className={cn("h-full transition-all duration-1000", stat.roi.startsWith('+') ? "bg-emerald-500" : "bg-rose-500")}
+                        className={cn("h-full transition-all duration-1000", stat.roi >= 0 ? "bg-emerald-500" : "bg-rose-500")}
                         style={{ width: `${stat.winRate}%` }}
                       />
                     </div>
@@ -127,24 +116,26 @@ export default function Analytics() {
             
             {/* Resumo Rápido (Stats Card Interno) */}
             <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
-              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Padrão de Lucro</h4>
+              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Melhor Performance</h4>
               <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="h-4 w-4 text-emerald-600" />
+                {topStrategies[0] && (
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">{topStrategies[0].strategyName}</p>
+                      <p className="text-[10px] text-slate-500">ROI {topStrategies[0].roi}% com {topStrategies[0].winRate}% win rate</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-900">AH +0.5 é sua linha ideal</p>
-                    <p className="text-[10px] text-slate-500">ROI 15.4% com 74% win rate</p>
-                  </div>
-                </div>
+                )}
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-8 bg-indigo-100 rounded-lg flex items-center justify-center">
                     <Target className="h-4 w-4 text-indigo-600" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-900">Ticket Médio: R$ 142,00</p>
-                    <p className="text-[10px] text-slate-500">Estabilidade alta no mercado ML</p>
+                    <p className="text-xs font-bold text-slate-900">Total de Apostas Analisadas</p>
+                    <p className="text-[10px] text-slate-500">{performances.reduce((acc, p) => acc + p.totalBets, 0)} tickets</p>
                   </div>
                 </div>
               </div>
@@ -152,24 +143,24 @@ export default function Analytics() {
           </div>
         </div>
 
-        {/* BLOCO 2: Top Ligas (Ranking) */}
+        {/* BLOCO 2: Top Estratégias (Ranking) */}
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
           <h3 className="font-bold text-slate-900 flex items-center gap-2">
             <Trophy className="h-5 w-5 text-amber-500" />
-            Performance por Liga
+            Ranking de Estratégias
           </h3>
           <div className="space-y-4">
-            {TOP_LEAGUES.map((league) => (
-              <div key={league.rank} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+            {topStrategies.map((strat) => (
+              <div key={strat.strategyName} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-black text-slate-300 w-4">#{league.rank}</span>
-                  <span className="text-sm font-bold text-slate-700">{league.league}</span>
+                  <span className="text-xs font-black text-slate-300 w-4">#{strat.ranking}</span>
+                  <span className="text-sm font-bold text-slate-700">{strat.strategyName}</span>
                 </div>
                 <span className={cn(
                   "text-xs font-black",
-                  league.status === 'positive' ? "text-emerald-600" : "text-rose-600"
+                  strat.profit >= 0 ? "text-emerald-600" : "text-rose-600"
                 )}>
-                  {league.profit}
+                  {strat.profit >= 0 ? '+' : ''}R$ {strat.profit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
             ))}
@@ -178,25 +169,21 @@ export default function Analytics() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* BLOCO 3: Distribuição por Range de Odds */}
+        {/* BLOCO 3: Distribuição por Eficiência */}
         <div className="lg:col-span-1 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
           <h3 className="font-bold text-slate-900 flex items-center gap-2">
             <PieChart className="h-5 w-5 text-indigo-500" />
-            Eficiência por Odds
+            Eficiência de Win Rate
           </h3>
           <div className="space-y-5 pt-2">
-            {ODDS_EFFICIENCY.map((range, idx) => (
+            {topStrategies.map((strat, idx) => (
               <PerformanceIndicator 
                 key={idx} 
-                label={range.range} 
-                winRate={range.winRate} 
-                color={range.winRate > 60 ? "text-emerald-500" : range.winRate > 40 ? "text-indigo-500" : "text-amber-500"} 
+                label={strat.strategyName} 
+                winRate={strat.winRate} 
+                color={strat.winRate > 60 ? "text-emerald-500" : strat.winRate > 40 ? "text-indigo-500" : "text-amber-500"} 
               />
             ))}
-          </div>
-          <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
-            <span className="text-[10px] font-bold text-slate-400 uppercase">Foco Recomendado:</span>
-            <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">Range 1.51 - 1.80</span>
           </div>
         </div>
 
@@ -222,7 +209,7 @@ export default function Analytics() {
                   <ArrowUpRight className="h-3 w-3" /> Otimizar Filtros
                 </h4>
                 <p className="text-sm text-indigo-100 leading-relaxed font-medium">
-                  Priorizar entradas no mercado <span className="text-emerald-400 font-black">AH +0.5</span> em ligas de elite (Premier League) onde o Win Rate ultrapassa 74%.
+                  Sua melhor estratégia no momento é a <span className="text-emerald-400 font-black">{topStrategies[0]?.strategyName || 'N/A'}</span>. Considere aumentar a exposição nela.
                 </p>
               </div>
               <div className="bg-indigo-800/40 p-5 rounded-xl border border-indigo-700/50 space-y-3">
@@ -230,7 +217,7 @@ export default function Analytics() {
                   <TrendingUp className="h-3 w-3" /> Corte de Risco
                 </h4>
                 <p className="text-sm text-indigo-100 leading-relaxed font-medium">
-                  Reduzir a stake em 50% para o mercado <span className="text-rose-400 font-black">Ambos Marcam</span> até que a taxa de acerto retorne para o range de 55%.
+                  Estratégias com Win Rate abaixo de 50% devem ter suas stakes revisadas para preservar a banca principal.
                 </p>
               </div>
             </div>
@@ -243,7 +230,7 @@ export default function Analytics() {
                   </div>
                 ))}
               </div>
-              <p className="text-[10px] text-indigo-300 font-bold uppercase tracking-widest">Motor processando 1.248 pontos de dados...</p>
+              <p className="text-[10px] text-indigo-300 font-bold uppercase tracking-widest">Motor processando dados analíticos...</p>
             </div>
           </div>
         </div>

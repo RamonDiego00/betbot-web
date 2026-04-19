@@ -1,31 +1,23 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowUpRight, 
-  ArrowDownRight, 
   Plus, 
   Search, 
   Filter,
-  CheckCircle2,
-  Clock,
-  AlertCircle
+  AlertCircle,
+  Loader2,
+  Wallet
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { dashboardService } from '@/lib/api/services/dashboard';
+import { SummaryKPIs, Bankroll } from '@/types/api';
 
 // --- TYPES ---
 interface MonthlyData {
   month: string;
   value: number;
-}
-
-interface Transaction {
-  id: number;
-  type: 'deposito' | 'saque';
-  bank: string;
-  value: string;
-  date: string;
-  status: 'concluido' | 'pendente';
 }
 
 interface ProgressCircleProps {
@@ -35,13 +27,7 @@ interface ProgressCircleProps {
   color: string;
 }
 
-// --- MOCK DATA ---
-const OVERVIEW_CARDS = [
-  { label: 'Total de Depósitos', value: 'R$ 8.500,00', icon: Plus, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-  { label: 'Total de Saques', value: 'R$ 3.200,00', icon: ArrowDownRight, color: 'text-amber-600', bg: 'bg-amber-50' },
-  { label: 'Lucro Médio Mensal', value: 'R$ 1.840,00', icon: ArrowUpRight, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-];
-
+// --- MOCK DATA (Fallback for now) ---
 const MONTHLY_PROFIT_DATA: MonthlyData[] = [
   { month: 'Out', value: 950 },
   { month: 'Nov', value: 1400 },
@@ -50,13 +36,6 @@ const MONTHLY_PROFIT_DATA: MonthlyData[] = [
   { month: 'Fev', value: 1850 },
   { month: 'Mar', value: 1500 },
   { month: 'Abr', value: 2450 },
-];
-
-const TRANSACTIONS: Transaction[] = [
-  { id: 1, type: 'deposito', bank: 'Bet365', value: 'R$ 500,00', date: '12/04/2026', status: 'concluido' },
-  { id: 2, type: 'saque', bank: 'Pinnacle', value: 'R$ 1.200,00', date: '10/04/2026', status: 'concluido' },
-  { id: 3, type: 'deposito', bank: 'Betfair', value: 'R$ 300,00', date: '08/04/2026', status: 'pendente' },
-  { id: 4, type: 'saque', bank: 'Bet365', value: 'R$ 200,00', date: '05/04/2026', status: 'concluido' },
 ];
 
 const GOALS = {
@@ -94,6 +73,42 @@ const ProgressCircle = ({ current, target, label, color }: ProgressCircleProps) 
 };
 
 export default function Financeiro() {
+  const [summary, setSummary] = useState<SummaryKPIs | null>(null);
+  const [bankrolls, setBankrolls] = useState<Bankroll[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [summaryData, bankrollsData] = await Promise.all([
+          dashboardService.getSummary(),
+          dashboardService.getBankrolls()
+        ]);
+        setSummary(summaryData);
+        setBankrolls(bankrollsData);
+      } catch (error) {
+        console.error("Error fetching financial data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  const overviewCards = summary ? [
+    { label: 'Saldo Total', value: `R$ ${summary.currentBankroll.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Wallet, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+    { label: 'Lucro Total', value: `R$ ${summary.totalProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: ArrowUpRight, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'ROI Geral', value: `${summary.roi}%`, icon: ArrowUpRight, color: 'text-amber-600', bg: 'bg-amber-50' },
+  ] : [];
+
+  if (loading) {
+    return (
+      <div className="h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
       {/* Header */}
@@ -115,7 +130,7 @@ export default function Financeiro() {
       {/* BLOCO 1: Overview Financeiro (Cards + Gráfico de Barras Minimalista) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 flex flex-col gap-4">
-          {OVERVIEW_CARDS.map((card, idx) => (
+          {overviewCards.map((card, idx) => (
             <div key={idx} className="bg-white p-5 rounded-xl border border-slate-200 flex items-center gap-4 shadow-sm">
               <div className={cn("p-3 rounded-lg", card.bg)}>
                 <card.icon className={cn("h-6 w-6", card.color)} />
@@ -158,7 +173,7 @@ export default function Financeiro() {
         {/* BLOCO 2: Histórico de Transações */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between px-1">
-            <h3 className="font-bold text-slate-900">Histórico de Transações</h3>
+            <h3 className="font-bold text-slate-900">Saldos por Casa</h3>
             <div className="flex items-center gap-3">
               <button className="text-slate-400 hover:text-slate-600 transition-colors"><Search className="h-4 w-4" /></button>
               <button className="text-slate-400 hover:text-slate-600 transition-colors"><Filter className="h-4 w-4" /></button>
@@ -168,40 +183,26 @@ export default function Financeiro() {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tipo</th>
-                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Banca</th>
-                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Valor</th>
-                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Data</th>
-                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Status</th>
+                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Plataforma</th>
+                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Moeda</th>
+                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Saldo</th>
+                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {TRANSACTIONS.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer group">
+                {bankrolls.map((br) => (
+                  <tr key={br.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        {tx.type === 'deposito' ? (
-                          <Plus className="h-3.5 w-3.5 text-emerald-500" />
-                        ) : (
-                          <ArrowDownRight className="h-3.5 w-3.5 text-amber-500" />
-                        )}
-                        <span className="text-xs font-bold capitalize text-slate-700">{tx.type}</span>
+                        <span className="text-xs font-bold capitalize text-slate-700">{br.platform}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-xs font-semibold text-slate-600">{tx.bank}</td>
-                    <td className={cn(
-                      "px-6 py-4 text-xs font-black",
-                      tx.type === 'deposito' ? "text-emerald-600" : "text-amber-600"
-                    )}>{tx.value}</td>
-                    <td className="px-6 py-4 text-xs font-medium text-slate-400">{tx.date}</td>
+                    <td className="px-6 py-4 text-xs font-semibold text-slate-600">{br.currency}</td>
+                    <td className="px-6 py-4 text-xs font-black text-slate-900">
+                      {br.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </td>
                     <td className="px-6 py-4 text-right">
-                      <span className={cn(
-                        "inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full",
-                        tx.status === 'concluido' ? "bg-emerald-50 text-emerald-600" : "bg-slate-50 text-slate-500"
-                      )}>
-                        {tx.status === 'concluido' ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
-                        {tx.status === 'concluido' ? 'Concluído' : 'Pendente'}
-                      </span>
+                      <button className="text-[10px] font-bold text-indigo-600 hover:underline">Ver Detalhes</button>
                     </td>
                   </tr>
                 ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Cpu, 
   Smartphone, 
@@ -11,25 +11,16 @@ import {
   Play, 
   Pause, 
   RotateCcw,
-  CheckCircle2,
   Clock,
-  AlertTriangle,
   Zap,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { automationService } from '@/lib/api/services/automation';
+import { Machine, BetWorkerJsonResponse } from '@/types/api';
 
 // --- TYPES ---
-interface ExecutionItem {
-  id: string;
-  match: string;
-  market: string;
-  odds: string;
-  stake: string;
-  status: 'pending' | 'executing' | 'completed' | 'failed';
-  timeSent: string;
-}
-
 interface LogEntry {
   id: number;
   time: string;
@@ -38,19 +29,6 @@ interface LogEntry {
 }
 
 // --- MOCK DATA ---
-const AUTOMATION_STATS = [
-  { label: 'Status do Server', value: 'Online', icon: Activity, color: 'text-emerald-600', bg: 'bg-emerald-50', subtext: 'Latência: 42ms' },
-  { label: 'Device Android', value: 'Conectado', icon: Smartphone, color: 'text-indigo-600', bg: 'bg-indigo-50', subtext: 'ID: emulator-5554' },
-  { label: 'Saúde do Fluxo', value: 'Estável', icon: ShieldCheck, color: 'text-emerald-600', bg: 'bg-emerald-50', subtext: '98% de sucesso' },
-  { label: 'Execuções Hoje', value: '142', icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50', subtext: 'Média 12/hora' },
-];
-
-const EXECUTION_QUEUE: ExecutionItem[] = [
-  { id: 'TX-9021', match: 'Real Madrid vs Man. City', market: 'ML Real Madrid', odds: '2.10', stake: 'R$ 100', status: 'executing', timeSent: '16:02:11' },
-  { id: 'TX-9022', match: 'Bayern vs Arsenal', market: 'Over 2.5 Gols', odds: '1.85', stake: 'R$ 150', status: 'pending', timeSent: '16:05:30' },
-  { id: 'TX-9020', match: 'Liverpool vs Chelsea', market: 'BTTS Yes', odds: '1.72', stake: 'R$ 200', status: 'completed', timeSent: '15:45:00' },
-];
-
 const LIVE_LOGS: LogEntry[] = [
   { id: 1, time: '16:02:11', level: 'info', message: 'Recebido JSON do backend: TX-9021' },
   { id: 2, time: '16:02:15', level: 'info', message: 'Iniciando Maestro: flow.yaml' },
@@ -62,7 +40,7 @@ const LIVE_LOGS: LogEntry[] = [
 
 // --- COMPONENTES AUXILIARES ---
 
-const StatusBadge = ({ status }: { status: ExecutionItem['status'] }) => {
+const StatusBadge = ({ status }: { status: 'pending' | 'executing' | 'completed' | 'failed' }) => {
   const styles = {
     pending: "bg-slate-100 text-slate-500",
     executing: "bg-indigo-50 text-indigo-600 animate-pulse",
@@ -84,6 +62,56 @@ const StatusBadge = ({ status }: { status: ExecutionItem['status'] }) => {
 
 export default function Automacao() {
   const [isPaused, setIsPaused] = useState(false);
+  const [machines, setMachines] = useState<Machine[]>([]);
+  const [dailyBets, setDailyBets] = useState<BetWorkerJsonResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [machinesData, dailyBetsData] = await Promise.all([
+          automationService.getMachines(),
+          automationService.getDailyBets()
+        ]);
+        setMachines(machinesData);
+        setDailyBets(dailyBetsData);
+      } catch (error) {
+        console.error("Error fetching automation data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  const stats = [
+    { 
+      label: 'Status do Server', 
+      value: machines.find(m => m.type === 'SERVER')?.status === 'ONLINE' ? 'Online' : 'Offline', 
+      icon: Activity, 
+      color: machines.find(m => m.type === 'SERVER')?.status === 'ONLINE' ? 'text-emerald-600' : 'text-rose-600', 
+      bg: machines.find(m => m.type === 'SERVER')?.status === 'ONLINE' ? 'bg-emerald-50' : 'bg-rose-50', 
+      subtext: machines.find(m => m.type === 'SERVER')?.ip || 'N/A' 
+    },
+    { 
+      label: 'Device Android', 
+      value: machines.find(m => m.type === 'DEVICE')?.status === 'ONLINE' ? 'Conectado' : 'Desconectado', 
+      icon: Smartphone, 
+      color: machines.find(m => m.type === 'DEVICE')?.status === 'ONLINE' ? 'text-indigo-600' : 'text-slate-400', 
+      bg: machines.find(m => m.type === 'DEVICE')?.status === 'ONLINE' ? 'bg-indigo-50' : 'bg-slate-50', 
+      subtext: machines.find(m => m.type === 'DEVICE')?.name || 'Nenhum' 
+    },
+    { label: 'Saúde do Fluxo', value: 'Estável', icon: ShieldCheck, color: 'text-emerald-600', bg: 'bg-emerald-50', subtext: '98% de sucesso' },
+    { label: 'Execuções Hoje', value: dailyBets?.totalSelections.toString() || '0', icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50', subtext: 'Total Gerado' },
+  ];
+
+  if (loading) {
+    return (
+      <div className="h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
@@ -115,7 +143,7 @@ export default function Automacao() {
 
       {/* BLOCO 1: Status & Estabilidade */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {AUTOMATION_STATS.map((stat, idx) => (
+        {stats.map((stat, idx) => (
           <div key={idx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
             <div className="flex items-center gap-3 mb-3">
               <div className={cn("p-2 rounded-lg", stat.bg)}>
@@ -139,24 +167,34 @@ export default function Automacao() {
               <ListOrdered className="h-4 w-4 text-indigo-500" />
               Fila de Comandos
             </h3>
-            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">3 Pendentes</span>
+            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">{dailyBets?.totalSelections || 0} Pendentes</span>
           </div>
 
           <div className="space-y-3">
-            {EXECUTION_QUEUE.map((item) => (
-              <div key={item.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-200 transition-colors group">
+            {!dailyBets || dailyBets.matches.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-xs bg-white rounded-xl border border-dashed border-slate-200">
+                Nenhuma aposta gerada para hoje.
+              </div>
+            ) : dailyBets.matches.map((item, idx) => (
+              <div key={idx} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-200 transition-colors group">
                 <div className="flex justify-between items-start mb-3">
-                  <span className="text-[10px] font-bold text-slate-400 font-mono tracking-tighter">ID: {item.id}</span>
-                  <StatusBadge status={item.status} />
+                  <span className="text-[10px] font-bold text-slate-400 font-mono tracking-tighter">{item.league}</span>
+                  <StatusBadge status="pending" />
                 </div>
                 <div className="space-y-1 mb-3">
-                  <p className="text-sm font-bold text-slate-900">{item.match}</p>
-                  <p className="text-xs text-slate-500 font-medium">{item.market} @ {item.odds}</p>
+                  <p className="text-sm font-bold text-slate-900">{item.matchName}</p>
+                  <p className="text-xs text-slate-500 font-medium">{item.market}: {item.selection} @ {item.odd.toFixed(2)}</p>
                 </div>
                 <div className="flex items-center justify-between pt-3 border-t border-slate-50">
-                  <span className="text-xs font-black text-indigo-600">{item.stake}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Confiança:</span>
+                    <span className={cn(
+                      "text-xs font-black",
+                      item.confidence > 0.7 ? "text-emerald-600" : "text-amber-500"
+                    )}>{Math.round(item.confidence * 100)}%</span>
+                  </div>
                   <div className="flex items-center gap-1 text-[10px] font-medium text-slate-400">
-                    <Clock className="h-3 w-3" /> {item.timeSent}
+                    <Clock className="h-3 w-3" /> AGUARDANDO
                   </div>
                 </div>
               </div>
@@ -226,9 +264,12 @@ export default function Automacao() {
                 <Smartphone className="h-6 w-6 text-indigo-400" />
               </div>
               <div className="space-y-0.5">
-                <p className="text-sm font-bold text-slate-900">Pixel 6 Pro - Emulator</p>
+                <p className="text-sm font-bold text-slate-900">{machines.find(m => m.type === 'DEVICE')?.name || 'Pixel 6 Pro - Emulator'}</p>
                 <div className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span className={cn(
+                    "h-1.5 w-1.5 rounded-full",
+                    machines.find(m => m.type === 'DEVICE')?.status === 'ONLINE' ? "bg-emerald-500" : "bg-rose-500"
+                  )} />
                   <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">Chrome Beta v124.x</p>
                 </div>
               </div>
