@@ -61,12 +61,16 @@ export default function Dashboard() {
           dashboardService.getSummary(),
           dashboardService.getBankrolls()
         ]);
-        setGames(gamesData);
+        
+        const validGames = Array.isArray(gamesData) ? gamesData : [];
+        const validBankrolls = Array.isArray(bankrollsData) ? bankrollsData : [];
+        
+        setGames(validGames);
         setSummary(summaryData);
-        setBankrolls(bankrollsData);
+        setBankrolls(validBankrolls);
         
         // Expand leagues that have matches
-        const leagues = Array.from(new Set(gamesData.map(g => g.league)));
+        const leagues = Array.from(new Set(validGames.map(g => g.league)));
         setExpandedLeagues(leagues);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -92,10 +96,10 @@ export default function Dashboard() {
   }, {} as Record<string, Game[]>);
 
   const stats: StatCardProps[] = summary ? [
-    { label: 'Saldo Total', value: `R$ ${summary.currentBankroll.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Wallet, trend: 'N/A', type: 'neutral' },
-    { label: 'Lucro (Geral)', value: `R$ ${summary.totalProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: TrendingUp, trend: `${summary.roi}% ROI`, type: summary.totalProfit >= 0 ? 'success' : 'danger' },
-    { label: 'Win Rate', value: `${summary.winRate}%`, icon: Percent, trend: 'N/A', type: 'neutral' },
-    { label: 'Apostas Totais', value: summary.totalBets.toString(), icon: Activity, trend: 'N/A', type: 'neutral' },
+    { label: 'Saldo Total', value: `R$ ${(summary.currentBankroll || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Wallet, trend: 'N/A', type: 'neutral' },
+    { label: 'Lucro (Geral)', value: `R$ ${(summary.totalProfit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: TrendingUp, trend: `${summary.roi || 0}% ROI`, type: (summary.totalProfit || 0) >= 0 ? 'success' : 'danger' },
+    { label: 'Win Rate', value: `${summary.winRate || 0}%`, icon: Percent, trend: 'N/A', type: 'neutral' },
+    { label: 'Apostas Totais', value: (summary.totalBets || 0).toString(), icon: Activity, trend: 'N/A', type: 'neutral' },
   ] : [];
 
   if (loading) {

@@ -87,7 +87,7 @@ export default function Financeiro() {
           dashboardService.getBankrolls()
         ]);
         setSummary(summaryData);
-        setBankrolls(bankrollsData);
+        setBankrolls(Array.isArray(bankrollsData) ? bankrollsData : []);
       } catch (error) {
         console.error("Error fetching financial data:", error);
       } finally {
@@ -98,9 +98,9 @@ export default function Financeiro() {
   }, []);
 
   const overviewCards = summary ? [
-    { label: 'Saldo Total', value: `R$ ${summary.currentBankroll.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Wallet, color: 'text-indigo-600', bg: 'bg-white border border-slate-800' },
-    { label: 'Lucro Total', value: `R$ ${summary.totalProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: ArrowUpRight, color: 'text-emerald-700', bg: 'bg-white border border-slate-800' },
-    { label: 'ROI Geral', value: `${summary.roi}%`, icon: ArrowUpRight, color: 'text-amber-600', bg: 'bg-white border border-slate-800' },
+    { label: 'Saldo Total', value: `R$ ${(summary.currentBankroll || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Wallet, color: 'text-indigo-600', bg: 'bg-white border border-slate-800' },
+    { label: 'Lucro Total', value: `R$ ${(summary.totalProfit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: ArrowUpRight, color: 'text-emerald-700', bg: 'bg-white border border-slate-800' },
+    { label: 'ROI Geral', value: `${summary.roi || 0}%`, icon: ArrowUpRight, color: 'text-amber-600', bg: 'bg-white border border-slate-800' },
   ] : [];
 
   if (loading) {

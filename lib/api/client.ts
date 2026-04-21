@@ -29,6 +29,7 @@ apiClient.interceptors.request.use(
   (config) => {
     const token = authUtils.getToken();
     if (token) {
+      console.log('Sending token to:', config.url, 'Token prefix:', token.substring(0, 15));
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -36,7 +37,7 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Interceptor to handle 401 errors (token expiration)
+// Interceptor to handle 401 errors (token expiration) and log 500 errors
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -46,6 +47,21 @@ apiClient.interceptors.response.use(
       });
       authUtils.logout();
     }
+    
+    if (error.response?.status === 500) {
+      console.error('------- BACKEND ERROR (500) -------');
+      console.error('URL:', error.config?.url);
+      console.error('Method:', error.config?.method?.toUpperCase());
+      console.error('Payload:', error.config?.data);
+      console.error('Params:', error.config?.params);
+      console.error('Response Data:', error.response.data);
+      console.error('-----------------------------------');
+      
+      toast.error('Erro no servidor', {
+        description: error.response.data?.message || 'Erro interno no processamento dos dados.'
+      });
+    }
+    
     return Promise.reject(error);
   }
 );

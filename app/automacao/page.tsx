@@ -72,7 +72,7 @@ export default function Automacao() {
           automationService.getMachines(),
           automationService.getDailyBets()
         ]);
-        setMachines(machinesData);
+        setMachines(Array.isArray(machinesData) ? machinesData : []);
         setDailyBets(dailyBetsData);
       } catch (error) {
         console.error("Error fetching automation data:", error);
@@ -101,7 +101,7 @@ export default function Automacao() {
       subtext: machines.find(m => m.type === 'DEVICE')?.name || 'Nenhum' 
     },
     { label: 'Saúde do Fluxo', value: 'Estável', icon: ShieldCheck, color: 'text-emerald-700', bg: 'bg-white border border-slate-800', subtext: '98% de sucesso' },
-    { label: 'Execuções Hoje', value: dailyBets?.totalSelections.toString() || '0', icon: Zap, color: 'text-amber-500', bg: 'bg-white border border-slate-800', subtext: 'Total Gerado' },
+    { label: 'Execuções Hoje', value: dailyBets?.totalSelections?.toString() || '0', icon: Zap, color: 'text-amber-500', bg: 'bg-white border border-slate-800', subtext: 'Total Gerado' },
   ];
 
   if (loading) {
@@ -168,7 +168,7 @@ export default function Automacao() {
 
           <div className="bg-white rounded-xl border border-slate-800 overflow-hidden shadow-sm">
             <div className="divide-y divide-slate-100">
-              {dailyBets?.selections.map((item, idx) => (
+              {(dailyBets?.selections || []).map((item, idx) => (
                 <div key={idx} className="p-4 hover:bg-slate-50 transition-colors group cursor-default">
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">ID: {item.matchId}</span>

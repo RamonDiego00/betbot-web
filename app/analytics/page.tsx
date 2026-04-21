@@ -45,7 +45,7 @@ export default function Analytics() {
     async function fetchData() {
       try {
         const data = await reportService.getStrategyPerformance();
-        setPerformances(data);
+        setPerformances(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Error fetching analytics data:", error);
       } finally {
@@ -63,7 +63,9 @@ export default function Analytics() {
     );
   }
 
-  const topStrategies = [...performances].sort((a, b) => a.ranking - b.ranking).slice(0, 5);
+  const topStrategies = Array.isArray(performances) 
+    ? [...performances].sort((a, b) => a.ranking - b.ranking).slice(0, 5)
+    : [];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
