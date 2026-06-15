@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { dashboardService } from '@/lib/api/services/dashboard';
-import { Game, SummaryKPIs, Bankroll } from '@/types/api';
+import { Game, DashboardSummary, Bankroll, DashboardLeagueGames } from '@/types/api';
 
 // --- TYPES ---
 interface StatCardProps { label: string; value: string; icon: React.ElementType; trend: string; type: 'neutral' | 'success' | 'danger'; }
@@ -48,29 +48,29 @@ const StatCard = ({ label, value, icon: Icon, trend, type }: StatCardProps) => (
 
 export default function Dashboard() {
   const [expandedLeagues, setExpandedLeagues] = useState<string[]>([]);
-  const [games, setGames] = useState<Game[]>([]);
-  const [summary, setSummary] = useState<SummaryKPIs | null>(null);
+  const [leaguesData, setLeaguesData] = useState<DashboardLeagueGames[]>([]);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [bankrolls, setBankrolls] = useState<Bankroll[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [gamesData, summaryData, bankrollsData] = await Promise.all([
-          dashboardService.getTodayGames(),
+        const [gamesByLeague, summaryData, bankrollsData] = await Promise.all([
+          dashboardService.getGamesByLeague(),
           dashboardService.getSummary(),
           dashboardService.getBankrolls()
         ]);
         
-        const validGames = Array.isArray(gamesData) ? gamesData : [];
+        const validLeagues = Array.isArray(gamesByLeague) ? gamesByLeague : [];
         const validBankrolls = Array.isArray(bankrollsData) ? bankrollsData : [];
         
-        setGames(validGames);
+        setLeaguesData(validLeagues);
         setSummary(summaryData);
         setBankrolls(validBankrolls);
         
         // Expand leagues that have matches
-        const leagues = Array.from(new Set(validGames.map(g => g.league)));
+        const leagues = validLeagues.map(l => l.league);
         setExpandedLeagues(leagues);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -87,19 +87,15 @@ export default function Dashboard() {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   }).format(new Date()).replace(/^\w/, (c) => c.toUpperCase());
 
-  const gamesByLeague = games.reduce((acc, game) => {
-    if (!acc[game.league]) {
-      acc[game.league] = [];
-    }
-    acc[game.league].push(game);
-    return acc;
-  }, {} as Record<string, Game[]>);
+  const winRate = summary?.dailyStats && summary.dailyStats.total > 0 
+    ? Math.round((summary.dailyStats.won / summary.dailyStats.total) * 100) 
+    : 0;
 
   const stats: StatCardProps[] = summary ? [
-    { label: 'Saldo Total', value: `R$ ${(summary.currentBankroll || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Wallet, trend: 'N/A', type: 'neutral' },
-    { label: 'Lucro (Geral)', value: `R$ ${(summary.totalProfit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: TrendingUp, trend: `${summary.roi || 0}% ROI`, type: (summary.totalProfit || 0) >= 0 ? 'success' : 'danger' },
-    { label: 'Win Rate', value: `${summary.winRate || 0}%`, icon: Percent, trend: 'N/A', type: 'neutral' },
-    { label: 'Apostas Totais', value: (summary.totalBets || 0).toString(), icon: Activity, trend: 'N/A', type: 'neutral' },
+    { label: 'Saldo Total', value: `R$ ${(summary.totalBalance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Wallet, trend: 'N/A', type: 'neutral' },
+    { label: 'Lucro (Mês)', value: `R$ ${(summary.monthlyProfit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: TrendingUp, trend: `${summary.overallRoi || 0}% ROI`, type: (summary.monthlyProfit || 0) >= 0 ? 'success' : 'danger' },
+    { label: 'Win Rate (Dia)', value: `${winRate}%`, icon: Percent, trend: `${summary.dailyStats.won}W / ${summary.dailyStats.lost}L`, type: 'neutral' },
+    { label: 'Apostas (Dia)', value: (summary.dailyStats.total || 0).toString(), icon: Activity, trend: `${summary.dailyStats.pending} PEND`, type: 'neutral' },
   ] : [];
 
   if (loading) {
@@ -123,7 +119,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-3">
           <div className="px-4 py-2 bg-white border border-slate-800 rounded-lg text-xs font-black uppercase text-slate-900 shadow-sm flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            Banca: R$ {summary?.currentBankroll.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            Banca: R$ {summary?.totalBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
           <button type="button" className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm">
             Nova Aposta
@@ -144,47 +140,47 @@ export default function Dashboard() {
           </div>
 
           <div className="bg-white rounded-xl border border-slate-800 overflow-hidden shadow-sm">
-            {Object.keys(gamesByLeague).length === 0 ? (
+            {leaguesData.length === 0 ? (
               <div className="p-8 text-center text-slate-500 text-sm">Nenhum jogo encontrado para hoje.</div>
-            ) : Object.entries(gamesByLeague).map(([league, leagueGames], idx) => {
-              const isExpanded = expandedLeagues.includes(league);
+            ) : leaguesData.map((leagueInfo, idx) => {
+              const isExpanded = expandedLeagues.includes(leagueInfo.league);
               
               return (
                 <div key={idx} className="border-b border-slate-800 last:border-0">
-                  <div onClick={() => toggleLeague(league)} className="bg-slate-50 px-4 py-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors border-b border-slate-800/10">
+                  <div onClick={() => toggleLeague(leagueInfo.league)} className="bg-slate-50 px-4 py-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors border-b border-slate-800/10">
                     <div className="flex items-center gap-3">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Liga:</span>
-                      <span className="text-[11px] font-black text-slate-900">{league}</span>
+                      <span className="text-[11px] font-black text-slate-900">{leagueInfo.league}</span>
                     </div>
                     {isExpanded ? <ChevronUp className="h-4 w-4 text-slate-800" /> : <ChevronDown className="h-4 w-4 text-slate-800" />}
                   </div>
 
                   {isExpanded && (
                     <div className="divide-y divide-slate-100">
-                      {leagueGames.map((game) => (
-                        <div key={game.id} className="flex items-center py-3.5 px-4 hover:bg-slate-50 transition-colors cursor-pointer group">
+                      {leagueInfo.matches.map((match) => (
+                        <div key={match.match_id} className="flex items-center py-3.5 px-4 hover:bg-slate-50 transition-colors cursor-pointer group">
                           <div className="w-14 flex flex-col items-start justify-center font-black">
-                            {game.status === 'IN_PROGRESS' ? (
-                              <span className="text-[10px] text-rose-600 animate-pulse">AO VIVO</span>
+                            {match.status === '1H' || match.status === '2H' || match.status === 'HT' ? (
+                              <span className="text-[10px] text-rose-600 animate-pulse">AO VIVO ({match.status})</span>
                             ) : (
                               <span className="text-[10px] text-slate-400">
-                                {new Date(game.startTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                {new Date(match.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             )}
                           </div>
                           <div className="flex-1 flex items-center justify-center gap-6 px-4">
                             <div className="flex items-center justify-end gap-3 flex-1">
-                              <span className="text-xs font-bold text-slate-900 text-right">{game.homeTeam}</span>
-                              <TeamLogo name={game.homeTeam} />
+                              <span className="text-xs font-bold text-slate-900 text-right">{match.home}</span>
+                              <TeamLogo name={match.home} />
                             </div>
                             <div className="flex items-center gap-2 min-w-[50px] justify-center bg-slate-900 px-2 py-1 rounded border border-slate-800 text-white shadow-sm">
-                              <span className="text-xs font-black">-</span>
-                              <span className="text-slate-500 text-[10px] font-black">-</span>
-                              <span className="text-xs font-black">-</span>
+                              <span className="text-xs font-black">{match.homeScore ?? '-'}</span>
+                              <span className="text-slate-500 text-[10px] font-black">x</span>
+                              <span className="text-xs font-black">{match.awayScore ?? '-'}</span>
                             </div>
                             <div className="flex items-center justify-start gap-3 flex-1">
-                              <TeamLogo name={game.awayTeam} />
-                              <span className="text-xs font-bold text-slate-900 text-left">{game.awayTeam}</span>
+                              <TeamLogo name={match.away} />
+                              <span className="text-xs font-bold text-slate-900 text-left">{match.away}</span>
                             </div>
                           </div>
                           <div className="w-6 flex justify-end"><Star className="h-3 w-3 text-slate-200 group-hover:text-indigo-600 transition-colors" /></div>
@@ -208,9 +204,9 @@ export default function Dashboard() {
                   <div className="text-xs text-slate-500 italic">Nenhum saldo encontrado.</div>
                 ) : bankrolls.map(br => (
                   <div key={br.id} className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-700">{br.platform}</span>
+                    <span className="text-xs font-bold text-slate-700">{br.provider}</span>
                     <span className="text-xs font-black text-slate-900">
-                      {br.currency} {br.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {br.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                 ))}
@@ -222,15 +218,15 @@ export default function Dashboard() {
                 <span className="text-[10px] font-black text-slate-400 uppercase">ROI Geral</span>
                 <span className={cn(
                   "text-xs font-black",
-                  (summary?.roi ?? 0) >= 0 ? "text-emerald-600" : "text-rose-600"
+                  (summary?.overallRoi ?? 0) >= 0 ? "text-emerald-600" : "text-rose-600"
                 )}>
-                  {summary?.roi}%
+                  {summary?.overallRoi}%
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[10px] font-black text-slate-400 uppercase">Win Rate</span>
+                <span className="text-[10px] font-black text-slate-400 uppercase">Win Rate (Dia)</span>
                 <span className="text-xs font-black text-slate-900 underline decoration-indigo-600 decoration-2 underline-offset-4">
-                  {summary?.winRate}%
+                  {winRate}%
                 </span>
               </div>
             </div>

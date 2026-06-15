@@ -5,36 +5,76 @@ export interface AuthResponse {
 }
 
 // --- Dashboard & Financeiro ---
-export interface Game {
-  id: string;
-  homeTeam: string;
-  awayTeam: string;
-  startTime: string; // ISO String
-  league: string;
-  status: 'PENDING' | 'IN_PROGRESS' | 'FINISHED';
+
+export interface DailyStats {
+  total: number;
+  won: number;
+  lost: number;
+  pending: number;
 }
 
-export interface SummaryKPIs {
-  totalProfit: number;
-  totalBets: number;
-  winRate: number;
-  roi: number;
-  currentBankroll: number;
+export interface DashboardSummary {
+  totalBalance: number;
+  monthlyProfit: number;
+  monthlyLoss: number;
+  overallRoi: number;
+  dailyStats: DailyStats;
 }
 
 export interface Bankroll {
   id: string;
-  name: string;
+  provider: string;
   balance: number;
-  currency: string;
-  platform: string;
+  lastSync: string; // ISO String
+}
+
+export interface FinancialSummary {
+  totalProfit: number;
+  totalLoss: number;
+  roiPercentage: number;
+  averageStake: number;
+  bookmakerBalances: {
+    bookmakerName: string;
+    currentBalance: number;
+  }[];
 }
 
 export interface FinancialSetupPayload {
-  initialBankroll: number;
-  riskPercentage: number;
-  stopLoss: number;
-  takeProfit: number;
+  initialBalance: number;
+  defaultStake: number;
+  targetRoi: number;
+}
+
+// --- Games & Matches ---
+
+export interface Game {
+  fixtureId: number;
+  homeTeam: string;
+  homeTeamLogo?: string;
+  awayTeam: string;
+  awayTeamLogo?: string;
+  league: string;
+  leagueLogo?: string;
+  matchTime: string;
+  status: string;
+  homeScore?: number;
+  awayScore?: number;
+  odds?: Record<string, number>;
+}
+
+export interface DashboardLeagueMatch {
+  home: string;
+  away: string;
+  match_id: number;
+  date: string; // ISO String
+  status: string;
+  homeScore?: number;
+  awayScore?: number;
+}
+
+export interface DashboardLeagueGames {
+  league: string;
+  matches: DashboardLeagueMatch[];
 }
 
 // --- Automação & Máquinas ---
@@ -47,20 +87,34 @@ export interface Machine {
   ip?: string;
 }
 
-export interface WorkerBetEntry {
-  matchName: string;
-  market: string;
-  selection: string;
-  odd: number;
-  league: string;
-  confidence: number;
+export interface WorkerBetSelection {
+  visual_target: string;
+  previous_visual_target: string;
+  column_index: number;
+  description: string;
+  odd?: number; // @JsonIgnore in API but maybe present in some contexts
+  confidence?: number;
+}
+
+export interface WorkerBetMarket {
+  market_name: string;
+  selections: WorkerBetSelection[];
+}
+
+export interface WorkerBetMatch {
+  match_id: number;
+  match_name: string;
+  markets: WorkerBetMarket[];
+  league?: string;
+  eventStart?: string;
 }
 
 export interface BetWorkerJsonResponse {
-  batchId: string;
-  generatedAt: string; // ISO String
-  totalSelections: number;
-  matches: WorkerBetEntry[];
+  batch_id: string;
+  global_stake: number;
+  matches: WorkerBetMatch[];
+  generatedAt?: string; // ISO String
+  totalSelections?: number;
 }
 
 // --- Histórico (Tickets) ---
@@ -74,6 +128,14 @@ export interface Ticket {
   stake: number;
   profit: number;
   result: 'WIN' | 'LOSS' | 'VOID' | 'PENDING';
+}
+
+export interface CreateTicketPayload {
+  matchId: number;
+  stake: number;
+  odd: number;
+  status: 'WIN' | 'LOSS' | 'PENDING';
+  type: string; // GOALS, CORNERS, BTTS, etc.
 }
 
 // --- Estratégia & Analytics ---
