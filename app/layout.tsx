@@ -14,6 +14,8 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+const AUTH_PAGES = ["/login", "/auth/callback"];
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -21,21 +23,38 @@ export default function RootLayout({
 }>) {
   const pathname = usePathname();
   const router = useRouter();
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  const isAuthPage = pathname === "/login" || pathname === "/auth/callback";
+  // Lê o token UMA VEZ no mount (client-side). SSR retorna false por não ter window.
+  // Login/logout usam hard-reload (window.location.href), então o valor é estável por sessão.
+  const [hasToken] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return !!authUtils.getToken();
+  });
 
+  // Monta flag para não agir antes da hidratação do cliente
+  const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setMounted(true); }, []);
+
+  const isAuthPage = AUTH_PAGES.includes(pathname);
+
+  // Redireciona após montagem (sem setState dentro do efeito)
   useEffect(() => {
-    const token = authUtils.getToken();
-    if (!token && !isAuthPage) {
-      router.push("/login");
-    } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsCheckingAuth(false);
+    if (!mounted) return;
+    if (hasToken && isAuthPage) {
+      // Usuário já autenticado tentando acessar login/callback → vai para dashboard
+      router.replace("/");
+    } else if (!hasToken && !isAuthPage) {
+      // Sem token em página protegida → vai para login
+      router.replace("/login");
     }
-  }, [pathname, router, isAuthPage]);
+  }, [mounted, hasToken, isAuthPage, router]);
 
-  if (isCheckingAuth && !isAuthPage) {
+  // Enquanto hidrata ou quando vai redirecionar, mostra apenas o spinner em páginas protegidas
+  const isRedirecting =
+    !mounted || (hasToken && isAuthPage) || (!hasToken && !isAuthPage);
+
+  if (isRedirecting && !isAuthPage) {
     return (
       <html lang="pt-BR" className={`${inter.variable} h-full antialiased`}>
         <body className="min-h-full bg-slate-50 flex items-center justify-center">

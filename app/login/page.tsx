@@ -11,8 +11,10 @@ export default function LoginPage() {
   const isDev = process.env.NODE_ENV === 'development';
 
   const handleGoogleLogin = () => {
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
-    window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
+    // Em dev (NEXT_PUBLIC_API_BASE_URL vazio), usa URL relativa para passar pelo proxy Next.js.
+    // Em prod, usa a URL absoluta da API hospedada.
+    const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+    window.location.href = `${base}/oauth2/authorization/google`;
   };
 
   const handleDebugLogin = async () => {
