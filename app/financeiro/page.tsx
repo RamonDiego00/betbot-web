@@ -1,28 +1,22 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { 
-  ArrowUpRight, 
-  ArrowDownRight,
-  Plus, 
-  Search, 
+import {
+  ArrowUpRight,
+  Plus,
+  Search,
   Filter,
   AlertCircle,
   Loader2,
   Wallet,
   CheckCircle2,
-  Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { financeiroService } from '@/lib/api/services/financeiro';
 import { dashboardService } from '@/lib/api/services/dashboard';
-import { SummaryKPIs, Bankroll } from '@/types/api';
+import { DashboardSummary, LucroMensalItem, MetaFinanceiraItem, SaldoCasaItem } from '@/types/api';
 
-// --- TYPES ---
-interface MonthlyData {
-  month: string;
-  value: number;
-}
-
+// --- TIPOS ---
 interface ProgressCircleProps {
   current: number;
   target: number;
@@ -30,66 +24,60 @@ interface ProgressCircleProps {
   color: string;
 }
 
-const MONTHLY_PROFIT_DATA: MonthlyData[] = [
-  { month: 'Out', value: 950 },
-  { month: 'Nov', value: 1400 },
-  { month: 'Dez', value: 2100 },
-  { month: 'Jan', value: 1200 },
-  { month: 'Fev', value: 1850 },
-  { month: 'Mar', value: 1500 },
-  { month: 'Abr', value: 2450 },
-];
-
-const GOALS = {
-  profit: { current: 1500, target: 2000, label: 'Meta de Lucro' },
-  loss: { current: 40, limit: 100, label: 'Limite de Perda' }
-};
-
 // --- COMPONENTES AUXILIARES ---
 
 const ProgressCircle = ({ current, target, label, color }: ProgressCircleProps) => {
-  const percentage = Math.min((current / target) * 100, 100);
+  const percentage = target > 0 ? Math.min((current / target) * 100, 100) : 0;
   return (
     <div className="flex flex-col items-center gap-2 p-4 bg-white rounded-xl border border-slate-800 shadow-sm">
       <div className="relative h-24 w-24 flex items-center justify-center">
         <svg className="h-full w-full" viewBox="0 0 100 100">
           <circle className="text-slate-100 stroke-current" strokeWidth="8" fill="transparent" r="40" cx="50" cy="50" />
-          <circle 
-            className={cn("stroke-current transition-all duration-1000", color)} 
-            strokeWidth="8" 
-            strokeDasharray={251.2} 
-            strokeDashoffset={251.2 - (percentage / 100) * 251.2} 
-            strokeLinecap="round" 
-            fill="transparent" 
-            r="40" cx="50" cy="50" 
+          <circle
+            className={cn("stroke-current transition-all duration-1000", color)}
+            strokeWidth="8"
+            strokeDasharray={251.2}
+            strokeDashoffset={251.2 - (percentage / 100) * 251.2}
+            strokeLinecap="round"
+            fill="transparent"
+            r="40" cx="50" cy="50"
           />
         </svg>
         <span className="absolute text-xs font-black text-slate-900">{Math.round(percentage)}%</span>
       </div>
       <div className="text-center">
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
-        <p className="text-xs font-black text-slate-900 uppercase">R$ {current} / R$ {target}</p>
+        <p className="text-xs font-black text-slate-900 uppercase">
+          R$ {current.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} / R$ {target.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+        </p>
       </div>
     </div>
   );
 };
 
 export default function Financeiro() {
-  const [summary, setSummary] = useState<SummaryKPIs | null>(null);
-  const [bankrolls, setBankrolls] = useState<Bankroll[]>([]);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [saldos, setSaldos] = useState<SaldoCasaItem[]>([]);
+  const [lucroMensal, setLucroMensal] = useState<LucroMensalItem[]>([]);
+  const [metas, setMetas] = useState<MetaFinanceiraItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [summaryData, bankrollsData] = await Promise.all([
+        const [summaryData, saldosData, lucroData, metasData] = await Promise.allSettled([
           dashboardService.getSummary(),
-          dashboardService.getBankrolls()
+          financeiroService.getSaldos(),
+          financeiroService.getLucroMensal(),
+          financeiroService.getMetas(),
         ]);
-        setSummary(summaryData);
-        setBankrolls(Array.isArray(bankrollsData) ? bankrollsData : []);
+
+        if (summaryData.status === 'fulfilled') setSummary(summaryData.value);
+        if (saldosData.status === 'fulfilled') setSaldos(saldosData.value);
+        if (lucroData.status === 'fulfilled') setLucroMensal(lucroData.value);
+        if (metasData.status === 'fulfilled') setMetas(metasData.value);
       } catch (error) {
-        console.error("Error fetching financial data:", error);
+        console.error('Error fetching financial data:', error);
       } finally {
         setLoading(false);
       }
@@ -97,10 +85,33 @@ export default function Financeiro() {
     fetchData();
   }, []);
 
+  const maxLucro = lucroMensal.length > 0 ? Math.max(...lucroMensal.map((d) => Math.abs(d.valor)), 1) : 1;
+
+  const metaLucro = metas.find((m) => m.tipo === 'lucro');
+  const metaPerda = metas.find((m) => m.tipo === 'perda');
+
   const overviewCards = summary ? [
-    { label: 'Saldo Total', value: `R$ ${(summary.currentBankroll || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Wallet, color: 'text-indigo-600', bg: 'bg-white border border-slate-800' },
-    { label: 'Lucro Total', value: `R$ ${(summary.totalProfit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: ArrowUpRight, color: 'text-emerald-700', bg: 'bg-white border border-slate-800' },
-    { label: 'ROI Geral', value: `${summary.roi || 0}%`, icon: ArrowUpRight, color: 'text-amber-600', bg: 'bg-white border border-slate-800' },
+    {
+      label: 'Saldo Total',
+      value: `R$ ${(summary.totalBalance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      icon: Wallet,
+      color: 'text-indigo-600',
+      bg: 'bg-white border border-slate-800',
+    },
+    {
+      label: 'Lucro Total',
+      value: `R$ ${(summary.monthlyProfit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      icon: ArrowUpRight,
+      color: 'text-emerald-700',
+      bg: 'bg-white border border-slate-800',
+    },
+    {
+      label: 'ROI Geral',
+      value: `${summary.overallRoi || 0}%`,
+      icon: ArrowUpRight,
+      color: 'text-amber-600',
+      bg: 'bg-white border border-slate-800',
+    },
   ] : [];
 
   if (loading) {
@@ -145,29 +156,33 @@ export default function Financeiro() {
           ))}
         </div>
 
+        {/* Gráfico de barras — dados reais da API */}
         <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-800 shadow-sm flex flex-col justify-between">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Histórico de Lucro por Mês</h3>
-            <select className="text-[10px] font-black bg-white border border-slate-800 rounded px-2 py-1 text-slate-500 outline-none uppercase tracking-widest">
-              <option>2026</option>
-              <option>2025</option>
-            </select>
           </div>
-          <div className="flex items-end justify-between h-40 px-2 gap-4">
-            {MONTHLY_PROFIT_DATA.map((data, idx) => (
-              <div key={idx} className="flex-1 flex flex-col items-center gap-3">
-                <div 
-                  className="w-full bg-indigo-500 rounded-t hover:bg-indigo-600 transition-all cursor-help relative group" 
-                  style={{ height: `${(data.value / 2500) * 100}%` }}
-                >
-                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-black py-1.5 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 uppercase tracking-tighter">
-                    R$ {data.value.toLocaleString()}
+          {lucroMensal.length === 0 ? (
+            <div className="flex items-center justify-center h-40 text-xs text-slate-400 italic font-bold">Sem dados mensais</div>
+          ) : (
+            <div className="flex items-end justify-between h-40 px-2 gap-4">
+              {lucroMensal.map((data, idx) => (
+                <div key={idx} className="flex-1 flex flex-col items-center gap-3">
+                  <div
+                    className={cn(
+                      "w-full rounded-t hover:opacity-80 transition-all cursor-help relative group",
+                      data.valor >= 0 ? "bg-indigo-500 hover:bg-indigo-600" : "bg-rose-400 hover:bg-rose-500"
+                    )}
+                    style={{ height: `${(Math.abs(data.valor) / maxLucro) * 100}%`, minHeight: '4px' }}
+                  >
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-black py-1.5 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 uppercase tracking-tighter">
+                      R$ {data.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </div>
                   </div>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{data.mes}</span>
                 </div>
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{data.month}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -193,19 +208,23 @@ export default function Financeiro() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {bankrolls.map((br) => (
-                    <tr key={br.id} className="hover:bg-slate-50/50 transition-colors group cursor-default">
+                  {saldos.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-8 text-center text-xs text-slate-500 italic">Nenhum saldo encontrado.</td>
+                    </tr>
+                  ) : saldos.map((s, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors group cursor-default">
                       <td className="px-6 py-4">
-                        <span className="text-xs font-black uppercase text-slate-700">{br.platform}</span>
+                        <span className="text-xs font-black uppercase text-slate-700">{s.casa}</span>
                       </td>
-                      <td className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">{br.currency}</td>
+                      <td className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">BRL</td>
                       <td className="px-6 py-4 text-xs font-black text-slate-900">
-                        {br.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        {s.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end items-center gap-1.5">
                           <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                          <span className="text-[10px] font-black text-emerald-700 uppercase tracking-tighter">Ativo</span>
+                          <span className="text-[10px] font-black text-emerald-700 uppercase tracking-tighter">{s.statusSincronizacao}</span>
                         </div>
                       </td>
                     </tr>
@@ -216,23 +235,27 @@ export default function Financeiro() {
           </div>
         </div>
 
-        {/* BLOCO 3: Metas Financeiras */}
+        {/* BLOCO 3: Metas Financeiras — dados reais */}
         <div className="space-y-4">
           <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest px-1">Metas e Limites</h3>
           <div className="grid grid-cols-1 gap-4">
-            <ProgressCircle 
-              current={GOALS.profit.current} 
-              target={GOALS.profit.target} 
-              label={GOALS.profit.label} 
-              color="text-emerald-500" 
-            />
-            <ProgressCircle 
-              current={GOALS.loss.current} 
-              target={GOALS.loss.limit} 
-              label={GOALS.loss.label} 
-              color="text-rose-500" 
-            />
-            
+            {metaLucro && (
+              <ProgressCircle
+                current={metaLucro.valorAtual}
+                target={metaLucro.metaOuLimite}
+                label="Meta de Lucro"
+                color="text-emerald-500"
+              />
+            )}
+            {metaPerda && (
+              <ProgressCircle
+                current={metaPerda.valorAtual}
+                target={metaPerda.metaOuLimite}
+                label="Limite de Perda"
+                color="text-rose-500"
+              />
+            )}
+
             <div className="bg-white border border-slate-800 rounded-xl p-5 shadow-sm relative overflow-hidden group hover:border-indigo-400 transition-all">
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-2">
@@ -240,7 +263,11 @@ export default function Financeiro() {
                   <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Dica de Gestão</span>
                 </div>
                 <p className="text-xs font-bold leading-relaxed text-slate-700">
-                  Você está a apenas <span className="font-black text-indigo-600">R$ 500,00</span> de atingir sua meta mensal. Mantenha a disciplina na stake!
+                  {metaLucro && metaLucro.metaOuLimite > metaLucro.valorAtual ? (
+                    <>Você está a <span className="font-black text-indigo-600">R$ {(metaLucro.metaOuLimite - metaLucro.valorAtual).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span> de atingir sua meta. Mantenha a disciplina na stake!</>
+                  ) : (
+                    <>Continue acompanhando suas metas para manter a saúde da banca.</>
+                  )}
                 </p>
               </div>
             </div>
@@ -250,3 +277,5 @@ export default function Financeiro() {
     </div>
   );
 }
+
+
