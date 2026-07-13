@@ -101,7 +101,17 @@ export default function Automacao() {
   const [mirroring, setMirroring] = useState(false);
   const [scheduleTime, setScheduleTime] = useState('06:00');
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
+  const [frameTimestamp, setFrameTimestamp] = useState(Date.now());
   const sseRef = useRef<EventSource | null>(null);
+
+  useEffect(() => {
+    if (mirroring && deviceStatus?.status === 'connected') {
+      const interval = setInterval(() => {
+        setFrameTimestamp(Date.now());
+      }, 2000);
+      return () => clearInterval(interval);
+    }
+  }, [mirroring, deviceStatus?.status]);
   const logCounter = useRef(0);
 
   useEffect(() => {
@@ -491,12 +501,23 @@ export default function Automacao() {
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
                     <MonitorSmartphone className="h-3.5 w-3.5" /> Espelho
                   </span>
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  <span className={cn("h-1.5 w-1.5 rounded-full animate-pulse", isDeviceOnline ? "bg-emerald-500" : "bg-amber-500")} />
                 </div>
-                <div className="aspect-[9/19] w-full bg-slate-900 dark:bg-slate-950 rounded-lg border border-slate-800 dark:border-slate-800 flex items-center justify-center p-4">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center leading-relaxed">
-                    Aguardando conexão com o dispositivo…
-                  </p>
+                <div className="aspect-[9/19] w-full bg-slate-900 dark:bg-slate-950 rounded-lg border border-slate-800 dark:border-slate-800 flex items-center justify-center overflow-hidden">
+                  {isDeviceOnline ? (
+                    <img 
+                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080'}/api/v1/worker/screen-frame?t=${frameTimestamp}`}
+                      alt="Device Screen"
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center leading-relaxed p-4">
+                      Aguardando conexão com o dispositivo…
+                    </p>
+                  )}
                 </div>
               </div>
             )}

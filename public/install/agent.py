@@ -8,9 +8,35 @@ import subprocess
 import urllib.request
 import urllib.error
 import threading
+import shutil
 from datetime import datetime
 
 CONFIG_FILE = "config.json"
+
+def get_adb_path():
+    # 1. Verifica se adb está globalmente disponível no PATH
+    global_adb = shutil.which("adb")
+    if global_adb:
+        return global_adb
+    
+    # 2. Caminhos comuns por plataforma
+    common_paths = [
+        # macOS (Homebrew Apple Silicon)
+        "/opt/homebrew/bin/adb",
+        # macOS (Homebrew Intel)
+        "/usr/local/bin/adb",
+        # macOS (Android SDK padrão)
+        os.path.expanduser("~/Library/Android/sdk/platform-tools/adb"),
+        # Windows (Instalador betbot)
+        "C:\\betbot\\bin\\platform-tools\\adb.exe",
+        "C:\\betbot\\platform-tools\\adb.exe",
+    ]
+    for path in common_paths:
+        if os.path.exists(path):
+            return path
+            
+    # Fallback pro nome simples
+    return "adb"
 
 def get_local_ip():
     try:
@@ -24,7 +50,8 @@ def get_local_ip():
 
 def get_adb_device_model():
     try:
-        res = subprocess.run(["adb", "shell", "getprop", "ro.product.model"], capture_output=True, text=True, timeout=3)
+        adb_cmd = get_adb_path()
+        res = subprocess.run([adb_cmd, "shell", "getprop", "ro.product.model"], capture_output=True, text=True, timeout=3)
         if res.returncode == 0:
             return res.stdout.strip()
     except Exception:
@@ -33,7 +60,8 @@ def get_adb_device_model():
 
 def get_battery_level():
     try:
-        res = subprocess.run(["adb", "shell", "dumpsys", "battery"], capture_output=True, text=True, timeout=3)
+        adb_cmd = get_adb_path()
+        res = subprocess.run([adb_cmd, "shell", "dumpsys", "battery"], capture_output=True, text=True, timeout=3)
         for line in res.stdout.splitlines():
             if "level:" in line:
                 return int(line.split(":")[1].strip())
@@ -139,7 +167,6 @@ class Agent:
 
     def log_to_api(self, log_type, message, job_id="daily-job"):
         print(f"[{log_type}] {message}")
-        # Envia log para o endpoint da API para streaming ao vivo
         self.make_api_request("/api/v1/worker/logs", method="POST", data={
             "logType": log_type,
             "message": message,
@@ -147,7 +174,6 @@ class Agent:
         })
 
     def run_maestro(self, yaml_content):
-        # Escreve o yaml temporário
         flow_file = "daily-flow.yaml"
         with open(flow_file, "w", encoding="utf-8") as f:
             f.write(yaml_content)
@@ -159,9 +185,9 @@ class Agent:
         for k, v in credentials.items():
             e_args += ["-e", f"{k}={v}"]
 
-        # Limpar estado do Maestro/Chrome
+        adb_cmd = get_adb_path()
         subprocess.run(["pkill", "-f", "maestro.cli.AppKt"], check=False, capture_output=True)
-        subprocess.run(["adb", "shell", "am", "force-stop", "dev.mobile.maestro"], check=False, capture_output=True)
+        subprocess.run([adb_cmd, "shell", "am", "force-stop", "dev.mobile.maestro"], check=False, capture_output=True)
         time.sleep(2)
 
         cmd = ["maestro", "test"] + e_args
@@ -173,7 +199,6 @@ class Agent:
         
         try:
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
-            # Ler logs em tempo real e enviar para a API
             for line in process.stdout:
                 line_str = line.strip()
                 if line_str:
@@ -194,7 +219,6 @@ class Agent:
         except Exception as e:
             self.log_to_api("ERROR", f"Falha na execução do subprocesso do Maestro: {e}")
 
-        # Remove o arquivo temporário
         if os.path.exists(flow_file):
             try:
                 os.remove(flow_file)
@@ -215,14 +239,14 @@ class Agent:
             pass
 
     def screen_mirror_loop(self):
+        adb_cmd = get_adb_path()
         while self.running:
             if not self.config["token"]:
                 time.sleep(5)
                 continue
             
             try:
-                # screencap -p cospe PNG direto na stdout
-                res = subprocess.run(["adb", "exec-out", "screencap", "-p"], capture_output=True, timeout=5)
+                res = subprocess.run([adb_cmd, "exec-out", "screencap", "-p"], capture_output=True, timeout=5)
                 if res.returncode == 0 and res.stdout:
                     self.upload_frame(res.stdout)
             except Exception:
@@ -234,11 +258,9 @@ class Agent:
         print("Starting BetBot Local Agent...")
         self.load_config()
 
-        # Inicia thread de heartbeat
         heartbeat_thread = threading.Thread(target=self.send_heartbeat, daemon=True)
         heartbeat_thread.start()
 
-        # Inicia thread de espelhamento de tela
         mirror_thread = threading.Thread(target=self.screen_mirror_loop, daemon=True)
         mirror_thread.start()
 
@@ -248,7 +270,6 @@ class Agent:
                 time.sleep(5)
                 continue
 
-            # Busca agenda da API
             schedule = self.make_api_request("/api/v1/worker/schedule")
             if schedule and schedule.get("scheduleEnabled"):
                 schedule_time_str = schedule.get("scheduleTime", "06:00")
@@ -258,12 +279,9 @@ class Agent:
 
                 if current_time_str == schedule_time_str and self.last_run_date != current_date:
                     print(f"Horario atingido ({schedule_time_str})! Solicitando fluxo YAML...")
-                    
-                    # Baixa YAML
                     yaml_content = self.make_api_request("/api/v1/worker/daily-yaml", method="POST", data={"ticketIds": []})
                     if yaml_content and isinstance(yaml_content, str) and not yaml_content.startswith("{"):
                         self.last_run_date = current_date
-                        # Roda Maestro em thread dedicada
                         threading.Thread(target=self.run_maestro, args=(yaml_content,), daemon=True).start()
                     else:
                         print("Erro ao obter o fluxo YAML válido da API (provavelmente sem tickets pendentes hoje).")
