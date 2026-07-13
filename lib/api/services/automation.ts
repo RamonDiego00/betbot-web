@@ -65,6 +65,14 @@ export const automationService = {
    * Retorna o EventSource para que o caller possa fechar a conexão (cleanup).
    * Usa a URL direta da API (sem proxy) para evitar timeouts do Vercel Edge.
    */
+  /**
+   * Atualiza o status de um ticket (usado pelo modo manual da fila de comandos).
+   * PATCH /api/v1/bets/tickets/{ticketId}/status
+   */
+  updateTicketStatus: async (ticketId: string, status: 'PENDING' | 'SKIPPED'): Promise<void> => {
+    await apiClient.patch(`/api/v1/bets/tickets/${ticketId}/status`, { status });
+  },
+
   streamLogs: (onLog: (log: AutomationLogEvent) => void, onError?: () => void): EventSource => {
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080';
     const source = new EventSource(`${baseUrl}/api/v1/automation/logs/stream`);

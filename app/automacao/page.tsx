@@ -1,19 +1,21 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Cpu, 
-  Smartphone, 
-  Activity, 
-  ShieldCheck, 
-  Terminal, 
-  Play, 
-  Pause, 
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  Cpu,
+  Smartphone,
+  Activity,
+  ShieldCheck,
+  Terminal,
+  Play,
+  Pause,
   RotateCcw,
   Zap,
   ChevronRight,
-  Loader2
+  Loader2,
+  ShieldAlert,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { automationService } from '@/lib/api/services/automation';
 import {
@@ -23,6 +25,10 @@ import {
   BetWorkerJsonResponse,
   WorkerBetTicket,
 } from '@/types/api';
+
+// --- MODO DE EXECUÇÃO (Automático x Manual) ---
+const AUTOMATION_MODE_KEY = 'betbot_automation_mode';
+type AutomationMode = 'AUTO' | 'MANUAL';
 
 // --- TYPES ---
 interface LogEntry {
@@ -34,13 +40,14 @@ interface LogEntry {
 
 // --- COMPONENTES AUXILIARES ---
 
-type BadgeStatus = 'pending' | 'executing' | 'completed' | 'failed';
+type BadgeStatus = 'pending' | 'executing' | 'completed' | 'failed' | 'skipped';
 
 const mapTicketStatus = (status: WorkerBetTicket['status']): BadgeStatus => {
   switch (status) {
     case 'IN_PROGRESS': return 'executing';
     case 'SUCCESS': return 'completed';
     case 'FAILED': return 'failed';
+    case 'SKIPPED': return 'skipped';
     default: return 'pending';
   }
 };
@@ -51,12 +58,14 @@ const StatusBadge = ({ status }: { status: BadgeStatus }) => {
     executing: "bg-indigo-50 text-indigo-600 animate-pulse border-indigo-200",
     completed: "bg-emerald-50 text-emerald-700 border-emerald-200",
     failed: "bg-rose-50 text-rose-700 border-rose-200",
+    skipped: "bg-slate-100 text-slate-400 border-slate-200",
   };
   const labels = {
     pending: "Aguardando",
     executing: "Executando",
     completed: "Finalizado",
     failed: "Erro",
+    skipped: "Ignorado",
   };
   return (
     <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border", styles[status])}>
@@ -82,8 +91,81 @@ export default function Automacao() {
   const [dailyBets, setDailyBets] = useState<BetWorkerJsonResponse | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  // Default 'AUTO' no server (SSR); sincronizado com localStorage no mount client-side.
+  const [automationMode, setAutomationMode] = useState<AutomationMode>('AUTO');
   const sseRef = useRef<EventSource | null>(null);
   const logCounter = useRef(0);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = window.localStorage.getItem(AUTOMATION_MODE_KEY);
+    if (stored === 'AUTO' || stored === 'MANUAL') {
+      setAutomationMode(stored);
+    }
+  }, []);
+
+  const handleTicketStatusToggle = useCallback((ticket: WorkerBetTicket, checked: boolean) => {
+    const previousStatus = ticket.status;
+    const nextStatus = checked ? 'PENDING' : 'SKIPPED';
+
+    // Optimistic update
+    setDailyBets((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        tickets: prev.tickets.map((t) =>
+          t.ticket_id === ticket.ticket_id ? { ...t, status: nextStatus } : t
+        ),
+      };
+    });
+
+    automationService.updateTicketStatus(ticket.ticket_id, nextStatus).catch((error) => {
+      console.error('Erro ao atualizar status do ticket:', error);
+      toast.error('Falha ao atualizar o ticket. Tente novamente.');
+      // Reverte optimistic update
+      setDailyBets((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          tickets: prev.tickets.map((t) =>
+            t.ticket_id === ticket.ticket_id ? { ...t, status: previousStatus } : t
+          ),
+        };
+      });
+    });
+  }, []);
+
+  const handleModeChange = useCallback((mode: AutomationMode) => {
+    setAutomationMode(mode);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(AUTOMATION_MODE_KEY, mode);
+    }
+
+    // Automático = roda tudo, reverte escolhas manuais anteriores (SKIPPED -> PENDING).
+    if (mode === 'AUTO') {
+      const skippedTickets = (dailyBets?.tickets ?? []).filter((t) => t.status === 'SKIPPED');
+      if (skippedTickets.length === 0) return;
+
+      setDailyBets((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          tickets: prev.tickets.map((t) =>
+            t.status === 'SKIPPED' ? { ...t, status: 'PENDING' } : t
+          ),
+        };
+      });
+
+      Promise.allSettled(
+        skippedTickets.map((t) => automationService.updateTicketStatus(t.ticket_id, 'PENDING'))
+      ).then((results) => {
+        const hasFailure = results.some((r) => r.status === 'rejected');
+        if (hasFailure) {
+          toast.error('Alguns tickets não puderam ser reativados. Verifique a fila.');
+        }
+      });
+    }
+  }, [dailyBets]);
 
   useEffect(() => {
     async function fetchData() {
@@ -191,21 +273,53 @@ export default function Automacao() {
             Controlando Server Local via Maestro Flow
           </p>
         </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setIsPaused(!isPaused)}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm",
-              isPaused ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-amber-500 hover:bg-amber-600 text-white"
-            )}
-          >
-            {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-            {isPaused ? 'Retomar Fluxo' : 'Pausar Automação'}
-          </button>
-          <button type="button" className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm">
-            <RotateCcw className="h-4 w-4" /> Reiniciar Server
-          </button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 bg-white border border-slate-800 rounded-lg px-4 py-2 shadow-sm">
+            <span className={cn(
+              "text-[10px] font-black uppercase tracking-wider",
+              automationMode === 'AUTO' ? "text-indigo-600" : "text-slate-400"
+            )}>
+              Automático
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={automationMode === 'MANUAL'}
+              aria-label="Alternar entre modo automático e manual"
+              onClick={() => handleModeChange(automationMode === 'AUTO' ? 'MANUAL' : 'AUTO')}
+              className={cn(
+                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2",
+                automationMode === 'MANUAL' ? "bg-indigo-600" : "bg-slate-200"
+              )}
+            >
+              <span className={cn(
+                "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                automationMode === 'MANUAL' ? "translate-x-6" : "translate-x-1"
+              )} />
+            </button>
+            <span className={cn(
+              "text-[10px] font-black uppercase tracking-wider",
+              automationMode === 'MANUAL' ? "text-indigo-600" : "text-slate-400"
+            )}>
+              Manual
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setIsPaused(!isPaused)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm",
+                isPaused ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-amber-500 hover:bg-amber-600 text-white"
+              )}
+            >
+              {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+              {isPaused ? 'Retomar Fluxo' : 'Pausar Automação'}
+            </button>
+            <button type="button" className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm">
+              <RotateCcw className="h-4 w-4" /> Reiniciar Server
+            </button>
+          </div>
         </div>
       </header>
 
@@ -239,12 +353,29 @@ export default function Automacao() {
               {(dailyBets?.tickets || []).map((ticket) => {
                 const firstMatch = ticket.matches[0];
                 const firstSelection = firstMatch?.markets[0]?.selections[0];
+                const isLocked = ticket.status === 'IN_PROGRESS' || ticket.status === 'SUCCESS' || ticket.status === 'FAILED';
+                const isChecked = ticket.status === 'PENDING' || isLocked;
                 return (
                   <div key={ticket.ticket_id} className="p-4 hover:bg-slate-50 transition-colors group cursor-default">
                     <div className="flex justify-between items-start mb-2">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
-                        {ticket.category} • {ticket.type}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {automationMode === 'MANUAL' && (
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            disabled={isLocked}
+                            onChange={(e) => handleTicketStatusToggle(ticket, e.target.checked)}
+                            aria-label={`Incluir ticket ${ticket.ticket_id} na execução`}
+                            className={cn(
+                              "h-4 w-4 rounded border-slate-400 text-indigo-600 focus:ring-2 focus:ring-indigo-500/40 accent-indigo-600",
+                              isLocked && "opacity-40 cursor-not-allowed"
+                            )}
+                          />
+                        )}
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+                          {ticket.category} • {ticket.type}
+                        </span>
+                      </div>
                       <StatusBadge status={mapTicketStatus(ticket.status)} />
                     </div>
                     <h4 className="text-xs font-black text-slate-900 mb-1">{firstMatch?.match_name || 'Sem jogo'}</h4>
@@ -259,6 +390,11 @@ export default function Automacao() {
               )}
             </div>
           </div>
+
+          <p className="flex items-start gap-2 text-[10px] text-slate-400 font-bold px-1 leading-relaxed">
+            <ShieldAlert className="h-3.5 w-3.5 shrink-0 mt-0.5 text-slate-300" />
+            As credenciais das casas de aposta ficam salvas localmente na máquina onde o worker roda — nunca são enviadas pra este portal.
+          </p>
         </div>
 
         {/* BLOCO 3: Console Logs (Maestro) */}

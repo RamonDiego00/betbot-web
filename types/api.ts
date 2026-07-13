@@ -178,7 +178,7 @@ export interface WorkerBetTicket {
   ticket_id: string;
   category: 'SAFE' | 'MEDIUM' | 'RISKY';
   type: 'SINGLE' | 'MULTIPLE';
-  status: 'PENDING' | 'IN_PROGRESS' | 'SUCCESS' | 'FAILED';
+  status: 'PENDING' | 'IN_PROGRESS' | 'SUCCESS' | 'FAILED' | 'SKIPPED';
   stake: number;
   total_odd: number;
   matches: WorkerBetMatch[];
