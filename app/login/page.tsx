@@ -1,14 +1,17 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Bug, Loader2 } from 'lucide-react';
+import React, { Suspense, useState } from 'react';
+import { AlertTriangle, Bug, Loader2 } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { authService } from '@/lib/api/services/auth';
 import { authUtils } from '@/lib/auth';
 import { toast } from 'sonner';
 
-export default function LoginPage() {
+function LoginPageInner() {
   const [isDebugLoading, setIsDebugLoading] = useState(false);
   const isDev = process.env.NODE_ENV === 'development';
+  const searchParams = useSearchParams();
+  const isNotAllowed = searchParams.get('error') === 'not_allowed';
 
   const handleGoogleLogin = () => {
     // Em dev (NEXT_PUBLIC_API_BASE_URL vazio), usa URL relativa para passar pelo proxy Next.js.
@@ -49,6 +52,15 @@ export default function LoginPage() {
           <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Bem-vindo ao BetBot</h2>
           <p className="text-slate-500">Sua central inteligente de apostas e automação.</p>
         </div>
+
+        {isNotAllowed && (
+          <div className="flex items-start gap-3 bg-rose-50 text-rose-700 border border-rose-200 rounded-2xl px-4 py-3">
+            <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+            <p className="text-sm font-medium leading-relaxed">
+              Seu email ainda não tem acesso liberado. Fale com o administrador para solicitar acesso.
+            </p>
+          </div>
+        )}
 
         <div className="space-y-4">
           <button
@@ -108,5 +120,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageInner />
+    </Suspense>
   );
 }
