@@ -3,15 +3,16 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Wallet, 
-  History, 
-  Cpu, 
-  BarChart3, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Wallet,
+  History,
+  Cpu,
+  BarChart3,
+  Settings,
   LogOut,
-  Circle
+  Circle,
+  Rocket
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { authUtils } from '@/lib/auth';
@@ -22,6 +23,7 @@ interface SidebarProps {
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { label: 'Setup', href: '/setup', icon: Rocket },
   { label: 'Financeiro', href: '/financeiro', icon: Wallet },
   { label: 'Histórico', href: '/historico', icon: History },
   { label: 'Automação', href: '/automacao', icon: Cpu },
