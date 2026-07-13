@@ -252,3 +252,22 @@ export interface StrategyPerformance {
   ranking: number;
   winRate: number;
 }
+
+// --- Billing (comprovante de lucro mensal) ---
+
+// Shape real de GET /api/v1/billing/statements (comprovantes do usuário logado)
+export interface BillingStatement {
+  id: string;
+  period: string; // "YYYY-MM"
+  declaredProfit: number | null;
+  fileName: string;
+  uploadedAt: string; // ISO String
+}
+
+// Shape real de GET /api/v1/billing/statements/all (somente admin)
+export interface AdminBillingStatement extends BillingStatement {
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userStatus: 'ACTIVE' | 'SUSPENDED';
+}
