@@ -12,7 +12,8 @@ import {
   Settings,
   LogOut,
   Circle,
-  Rocket
+  Rocket,
+  ListChecks
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { authUtils } from '@/lib/auth';
@@ -27,6 +28,7 @@ const NAV_ITEMS = [
   { label: 'Financeiro', href: '/financeiro', icon: Wallet },
   { label: 'Histórico', href: '/historico', icon: History },
   { label: 'Automação', href: '/automacao', icon: Cpu },
+  { label: 'Apostas do Dia', href: '/apostas-do-dia', icon: ListChecks },
   { label: 'Analytics', href: '/analytics', icon: BarChart3 },
 ];
 

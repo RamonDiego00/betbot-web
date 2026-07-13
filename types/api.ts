@@ -161,6 +161,8 @@ export interface Machine {
 // (mapper.py) e NÃO trafegam no JSON.
 export interface WorkerBetSelection {
   description: string;
+  period?: string;
+  team_filter?: string;
 }
 
 export interface WorkerBetMarket {
