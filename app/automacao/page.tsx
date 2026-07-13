@@ -9,11 +9,15 @@ import {
   Terminal,
   Play,
   Pause,
-  RotateCcw,
   Zap,
   ChevronRight,
   Loader2,
   ShieldAlert,
+  Clock,
+  MonitorSmartphone,
+  RotateCcw,
+  Target,
+  Layers,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -30,6 +34,10 @@ import {
 const AUTOMATION_MODE_KEY = 'betbot_automation_mode';
 type AutomationMode = 'AUTO' | 'MANUAL';
 
+// --- AGENDAMENTO (Scheduler) ---
+const SCHEDULE_TIME_KEY = 'betbot_schedule_time';
+const SCHEDULE_ENABLED_KEY = 'betbot_schedule_enabled';
+
 // --- TYPES ---
 interface LogEntry {
   id: number;
@@ -37,8 +45,6 @@ interface LogEntry {
   level: 'INFO' | 'DEBUG' | 'WARN' | 'ERROR';
   message: string;
 }
-
-// --- COMPONENTES AUXILIARES ---
 
 type BadgeStatus = 'pending' | 'executing' | 'completed' | 'failed' | 'skipped';
 
@@ -54,11 +60,11 @@ const mapTicketStatus = (status: WorkerBetTicket['status']): BadgeStatus => {
 
 const StatusBadge = ({ status }: { status: BadgeStatus }) => {
   const styles = {
-    pending: "bg-slate-50 text-slate-500 border-slate-800/10",
-    executing: "bg-indigo-50 text-indigo-600 animate-pulse border-indigo-200",
-    completed: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    failed: "bg-rose-50 text-rose-700 border-rose-200",
-    skipped: "bg-slate-100 text-slate-400 border-slate-200",
+    pending: "bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700",
+    executing: "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 animate-pulse border-indigo-200 dark:border-indigo-800",
+    completed: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800",
+    failed: "bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800",
+    skipped: "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700",
   };
   const labels = {
     pending: "Aguardando",
@@ -91,8 +97,10 @@ export default function Automacao() {
   const [dailyBets, setDailyBets] = useState<BetWorkerJsonResponse | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  // Default 'AUTO' no server (SSR); sincronizado com localStorage no mount client-side.
   const [automationMode, setAutomationMode] = useState<AutomationMode>('AUTO');
+  const [mirroring, setMirroring] = useState(false);
+  const [scheduleTime, setScheduleTime] = useState('06:00');
+  const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const sseRef = useRef<EventSource | null>(null);
   const logCounter = useRef(0);
 
@@ -102,13 +110,32 @@ export default function Automacao() {
     if (stored === 'AUTO' || stored === 'MANUAL') {
       setAutomationMode(stored);
     }
+    const storedTime = window.localStorage.getItem(SCHEDULE_TIME_KEY);
+    if (storedTime) setScheduleTime(storedTime);
+    setScheduleEnabled(window.localStorage.getItem(SCHEDULE_ENABLED_KEY) === 'true');
+  }, []);
+
+  const handleScheduleTimeChange = useCallback((time: string) => {
+    setScheduleTime(time);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(SCHEDULE_TIME_KEY, time);
+    }
+  }, []);
+
+  const handleScheduleEnabledToggle = useCallback(() => {
+    setScheduleEnabled((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(SCHEDULE_ENABLED_KEY, String(next));
+      }
+      return next;
+    });
   }, []);
 
   const handleTicketStatusToggle = useCallback((ticket: WorkerBetTicket, checked: boolean) => {
     const previousStatus = ticket.status;
     const nextStatus = checked ? 'PENDING' : 'SKIPPED';
 
-    // Optimistic update
     setDailyBets((prev) => {
       if (!prev) return prev;
       return {
@@ -122,7 +149,6 @@ export default function Automacao() {
     automationService.updateTicketStatus(ticket.ticket_id, nextStatus).catch((error) => {
       console.error('Erro ao atualizar status do ticket:', error);
       toast.error('Falha ao atualizar o ticket. Tente novamente.');
-      // Reverte optimistic update
       setDailyBets((prev) => {
         if (!prev) return prev;
         return {
@@ -141,7 +167,6 @@ export default function Automacao() {
       window.localStorage.setItem(AUTOMATION_MODE_KEY, mode);
     }
 
-    // Automático = roda tudo, reverte escolhas manuais anteriores (SKIPPED -> PENDING).
     if (mode === 'AUTO') {
       const skippedTickets = (dailyBets?.tickets ?? []).filter((t) => t.status === 'SKIPPED');
       if (skippedTickets.length === 0) return;
@@ -166,6 +191,10 @@ export default function Automacao() {
       });
     }
   }, [dailyBets]);
+
+  const handleTogglePause = useCallback(() => {
+    setIsPaused((prev) => !prev);
+  }, []);
 
   useEffect(() => {
     async function fetchData() {
@@ -197,7 +226,6 @@ export default function Automacao() {
     }
     fetchData();
 
-    // Abre stream SSE para logs ao vivo
     sseRef.current = automationService.streamLogs(
       (log: AutomationLogEvent) => {
         const entry: LogEntry = {
@@ -206,7 +234,7 @@ export default function Automacao() {
           level: log.logType,
           message: log.message,
         };
-        setLogs((prev) => [...prev.slice(-99), entry]); // mantém últimos 100
+        setLogs((prev) => [...prev.slice(-99), entry]);
       },
       () => console.warn('SSE de logs desconectado — reconectando não implementado.'),
     );
@@ -224,32 +252,32 @@ export default function Automacao() {
       label: 'Status do Server',
       value: isServerOnline ? 'Online' : 'Offline',
       icon: Activity,
-      color: isServerOnline ? 'text-emerald-700' : 'text-rose-700',
-      bg: 'bg-white border border-slate-800',
+      color: isServerOnline ? 'text-emerald-700 dark:text-emerald-450' : 'text-rose-700 dark:text-rose-455',
+      bg: 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800',
       subtext: serverStatus?.serverVersion ?? 'N/A',
     },
     {
       label: 'Device Android',
       value: isDeviceOnline ? 'Conectado' : 'Desconectado',
       icon: Smartphone,
-      color: isDeviceOnline ? 'text-indigo-600' : 'text-slate-400',
-      bg: 'bg-white border border-slate-800',
+      color: isDeviceOnline ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500',
+      bg: 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800',
       subtext: deviceStatus?.model ?? 'Nenhum',
     },
     {
       label: 'Saúde do Fluxo',
       value: isServerOnline && isDeviceOnline ? 'Estável' : 'Atenção',
       icon: ShieldCheck,
-      color: isServerOnline && isDeviceOnline ? 'text-emerald-700' : 'text-amber-600',
-      bg: 'bg-white border border-slate-800',
+      color: isServerOnline && isDeviceOnline ? 'text-emerald-700 dark:text-emerald-455' : 'text-amber-600 dark:text-amber-455',
+      bg: 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800',
       subtext: deviceStatus ? `Bateria: ${deviceStatus.batteryLevel}%` : 'N/D',
     },
     {
       label: 'Execuções Hoje',
       value: (dailyBets?.tickets?.length ?? 0).toString(),
       icon: Zap,
-      color: 'text-amber-500',
-      bg: 'bg-white border border-slate-800',
+      color: 'text-amber-500 dark:text-amber-400',
+      bg: 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800',
       subtext: 'Total Gerado',
     },
   ];
@@ -267,17 +295,17 @@ export default function Automacao() {
       {/* Header com Controles Master */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-black text-slate-900 tracking-tight italic uppercase">Automação Mobile</h2>
-          <p className="text-sm text-slate-500 mt-1 flex items-center gap-2 font-bold uppercase tracking-tighter">
-            <Cpu className="h-4 w-4 text-indigo-600" />
+          <h2 className="text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight italic uppercase">Automação Mobile</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 font-bold uppercase tracking-tighter">
+            <Cpu className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
             Controlando Server Local via Maestro Flow
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 bg-white border border-slate-800 rounded-lg px-4 py-2 shadow-sm">
+          <div className="flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 shadow-sm">
             <span className={cn(
               "text-[10px] font-black uppercase tracking-wider",
-              automationMode === 'AUTO' ? "text-indigo-600" : "text-slate-400"
+              automationMode === 'AUTO' ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500"
             )}>
               Automático
             </span>
@@ -289,7 +317,7 @@ export default function Automacao() {
               onClick={() => handleModeChange(automationMode === 'AUTO' ? 'MANUAL' : 'AUTO')}
               className={cn(
                 "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2",
-                automationMode === 'MANUAL' ? "bg-indigo-600" : "bg-slate-200"
+                automationMode === 'MANUAL' ? "bg-indigo-600" : "bg-slate-200 dark:bg-slate-800"
               )}
             >
               <span className={cn(
@@ -299,7 +327,7 @@ export default function Automacao() {
             </button>
             <span className={cn(
               "text-[10px] font-black uppercase tracking-wider",
-              automationMode === 'MANUAL' ? "text-indigo-600" : "text-slate-400"
+              automationMode === 'MANUAL' ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500"
             )}>
               Manual
             </span>
@@ -307,16 +335,18 @@ export default function Automacao() {
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setIsPaused(!isPaused)}
+              onClick={handleTogglePause}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm",
-                isPaused ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-amber-500 hover:bg-amber-600 text-white"
+                "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider text-white transition-all shadow-sm",
+                isPaused 
+                  ? "bg-emerald-600 hover:bg-emerald-700" 
+                  : "bg-indigo-600 hover:bg-indigo-700"
               )}
             >
               {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
               {isPaused ? 'Retomar Fluxo' : 'Pausar Automação'}
             </button>
-            <button type="button" className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm">
+            <button type="button" className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-slate-950 hover:bg-slate-800 dark:hover:bg-slate-900 text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all border border-transparent dark:border-slate-800 shadow-sm">
               <RotateCcw className="h-4 w-4" /> Reiniciar Server
             </button>
           </div>
@@ -328,35 +358,35 @@ export default function Automacao() {
         {stats.map((stat, idx) => (
           <div key={idx} className={cn("p-5 rounded-xl shadow-sm", stat.bg)}>
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-slate-50 rounded-lg border border-slate-800/10">
+              <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700/50">
                 <stat.icon className={cn("h-5 w-5", stat.color)} />
               </div>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</span>
+              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{stat.label}</span>
             </div>
             <div className="flex items-baseline gap-2">
-              <h4 className="text-2xl font-black text-slate-900 tracking-tight">{stat.value}</h4>
-              <span className="text-[10px] font-bold text-slate-400 uppercase">{stat.subtext}</span>
+              <h4 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{stat.value}</h4>
+              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">{stat.subtext}</span>
             </div>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* BLOCO 2: Fila de Execução (JSONs) */}
+        {/* BLOCO 2: Tickets do Dia */}
         <div className="lg:col-span-1 space-y-4">
           <div className="flex items-center justify-between px-1">
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Fila de Comandos</h3>
+            <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest">Tickets do Dia</h3>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-800 overflow-hidden shadow-sm">
-            <div className="divide-y divide-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800">
               {(dailyBets?.tickets || []).map((ticket) => {
                 const firstMatch = ticket.matches[0];
                 const firstSelection = firstMatch?.markets[0]?.selections[0];
                 const isLocked = ticket.status === 'IN_PROGRESS' || ticket.status === 'SUCCESS' || ticket.status === 'FAILED';
                 const isChecked = ticket.status === 'PENDING' || isLocked;
                 return (
-                  <div key={ticket.ticket_id} className="p-4 hover:bg-slate-50 transition-colors group cursor-default">
+                  <div key={ticket.ticket_id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group cursor-default">
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-2">
                         {automationMode === 'MANUAL' && (
@@ -372,54 +402,116 @@ export default function Automacao() {
                             )}
                           />
                         )}
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-tighter">
                           {ticket.category} • {ticket.type}
                         </span>
                       </div>
                       <StatusBadge status={mapTicketStatus(ticket.status)} />
                     </div>
-                    <h4 className="text-xs font-black text-slate-900 mb-1">{firstMatch?.match_name || 'Sem jogo'}</h4>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                    <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 mb-1">{firstMatch?.match_name || 'Sem jogo'}</h4>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest">
                       {firstSelection?.description || 'N/A'} @ {ticket.total_odd.toFixed(2)}
                     </p>
                   </div>
                 );
               })}
               {(!dailyBets || dailyBets.tickets.length === 0) && (
-                <div className="p-8 text-center text-xs text-slate-500 font-bold uppercase italic">Nenhum comando na fila</div>
+                <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 font-bold uppercase italic">Nenhum comando na fila</div>
               )}
             </div>
           </div>
 
-          <p className="flex items-start gap-2 text-[10px] text-slate-400 font-bold px-1 leading-relaxed">
-            <ShieldAlert className="h-3.5 w-3.5 shrink-0 mt-0.5 text-slate-300" />
+          <p className="flex items-start gap-2 text-[10px] text-slate-400 dark:text-slate-500 font-bold px-1 leading-relaxed">
+            <ShieldAlert className="h-3.5 w-3.5 shrink-0 mt-0.5 text-slate-300 dark:text-slate-600" />
             As credenciais das casas de aposta ficam salvas localmente na máquina onde o worker roda — nunca são enviadas pra este portal.
           </p>
+
+          {/* Agendamento da Automação */}
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
+                <Clock className="h-4 w-4 text-indigo-600 dark:text-indigo-400" /> Agendamento da Automação
+              </h3>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={scheduleEnabled}
+                aria-label="Ativar ou desativar o agendamento da automação"
+                onClick={handleScheduleEnabledToggle}
+                className={cn(
+                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2",
+                  scheduleEnabled ? "bg-indigo-600" : "bg-slate-200 dark:bg-slate-800"
+                )}
+              >
+                <span className={cn(
+                  "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                  scheduleEnabled ? "translate-x-6" : "translate-x-1"
+                )} />
+              </button>
+            </div>
+            <div className="flex items-center gap-3">
+              <label htmlFor="schedule-time" className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                Rodar às
+              </label>
+              <input
+                id="schedule-time"
+                type="time"
+                value={scheduleTime}
+                disabled={!scheduleEnabled}
+                onChange={(e) => handleScheduleTimeChange(e.target.value)}
+                className={cn(
+                  "bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-sm font-black text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40",
+                  !scheduleEnabled && "opacity-40 cursor-not-allowed"
+                )}
+              />
+            </div>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold leading-relaxed">
+              Horário local do dispositivo em que o agente inicia as apostas do dia.
+            </p>
+          </div>
         </div>
 
         {/* BLOCO 3: Console Logs (Maestro) */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between px-1">
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+            <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
               <Terminal className="h-4 w-4" /> Maestro Live Logs
             </h3>
-            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-1">
+            <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-1">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
               Ao Vivo
             </span>
           </div>
 
-          <div className="bg-slate-900 rounded-xl border border-slate-800 p-6 shadow-xl min-h-[300px] font-mono text-sm relative">
-            <div className="flex items-center gap-2 mb-6 border-b border-slate-800 pb-4">
+          <div className={cn("grid gap-4", mirroring ? "grid-cols-1 md:grid-cols-[minmax(180px,220px)_1fr]" : "grid-cols-1")}>
+            {/* Espelhamento do device */}
+            {mirroring && (
+              <div className="bg-slate-950 dark:bg-slate-950 rounded-xl border border-slate-800 dark:border-slate-800 shadow-xl p-3 flex flex-col">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                    <MonitorSmartphone className="h-3.5 w-3.5" /> Espelho
+                  </span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                </div>
+                <div className="aspect-[9/19] w-full bg-slate-900 dark:bg-slate-950 rounded-lg border border-slate-800 dark:border-slate-800 flex items-center justify-center p-4">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center leading-relaxed">
+                    Aguardando conexão com o dispositivo…
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-slate-900 dark:bg-slate-950 rounded-xl border border-slate-800 dark:border-slate-800 p-6 shadow-xl min-h-[300px] font-mono text-sm relative">
+            <div className="flex items-center gap-2 mb-6 border-b border-slate-800 dark:border-slate-800 pb-4">
               <div className="h-3 w-3 rounded-full bg-rose-500" />
               <div className="h-3 w-3 rounded-full bg-amber-500" />
               <div className="h-3 w-3 rounded-full bg-emerald-500" />
-              <span className="ml-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">betbot-worker-maestro.log</span>
+              <span className="ml-2 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">betbot-worker-maestro.log</span>
             </div>
 
             <div className="space-y-2 text-[12px] max-h-60 overflow-y-auto">
               {logs.length === 0 ? (
-                <div className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Aguardando logs...</div>
+                <div className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">Aguardando logs...</div>
               ) : logs.map((log) => (
                 <div key={log.id} className="flex gap-4 group">
                   <span className="text-slate-600 shrink-0 font-bold">[{log.time}]</span>
@@ -428,7 +520,7 @@ export default function Automacao() {
                   </span>
                   <span className={cn(
                     "group-hover:text-slate-100 transition-colors",
-                    log.level === 'ERROR' ? "text-rose-200" : "text-slate-300"
+                    log.level === 'ERROR' ? "text-rose-200" : "text-slate-300 dark:text-slate-400"
                   )}>
                     {log.message}
                   </span>
@@ -439,29 +531,39 @@ export default function Automacao() {
                 <span className="text-slate-500 animate-pulse uppercase text-[10px] font-black tracking-widest">Aguardando próximo comando...</span>
               </div>
             </div>
+            </div>
           </div>
 
           {/* Device Preview */}
-          <div className="bg-white p-4 rounded-xl border border-slate-800 flex items-center justify-between shadow-sm transition-all hover:border-indigo-400 group">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-sm transition-all hover:border-indigo-400 dark:hover:border-indigo-500 group">
             <div className="flex items-center gap-4">
-              <div className="h-12 w-12 bg-slate-900 rounded-lg flex items-center justify-center border border-slate-800">
+              <div className="h-12 w-12 bg-slate-900 dark:bg-slate-950 rounded-lg flex items-center justify-center border border-slate-800 dark:border-slate-800">
                 <Smartphone className="h-6 w-6 text-indigo-400 group-hover:scale-110 transition-transform" />
               </div>
               <div className="space-y-0.5">
-                <p className="text-sm font-black text-slate-900 uppercase">{deviceStatus?.model || 'Sem device'}</p>
+                <p className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase">{deviceStatus?.model || 'Sem device'}</p>
                 <div className="flex items-center gap-2">
                   <span className={cn(
                     "h-1.5 w-1.5 rounded-full animate-pulse",
                     isDeviceOnline ? "bg-emerald-500" : "bg-rose-500"
                   )} />
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                     {deviceStatus ? `App ${deviceStatus.appVersion} · Uptime ${deviceStatus.uptime}` : 'Desconectado'}
                   </p>
                 </div>
               </div>
             </div>
-            <button type="button" className="px-3 py-1.5 bg-slate-50 border border-slate-800/10 hover:border-slate-800 text-slate-900 rounded text-[10px] font-black uppercase transition-all flex items-center gap-2">
-              Espelhar Tela <ChevronRight className="h-3 w-3" />
+            <button
+              type="button"
+              onClick={() => setMirroring((prev) => !prev)}
+              className={cn(
+                "px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all flex items-center gap-2 border",
+                mirroring
+                  ? "bg-slate-900 dark:bg-slate-950 border-slate-900 dark:border-slate-800 text-white hover:bg-slate-800 dark:hover:bg-slate-900"
+                  : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-800 dark:hover:border-slate-600 text-slate-900 dark:text-slate-100"
+              )}
+            >
+              {mirroring ? 'Parar Espelhamento' : 'Espelhar Tela'} <ChevronRight className="h-3 w-3" />
             </button>
           </div>
         </div>

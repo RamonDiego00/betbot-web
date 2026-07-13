@@ -16,6 +16,10 @@ const inter = Inter({
 
 const AUTH_PAGES = ["/login", "/auth/callback"];
 
+// Anti-FOUC: aplica a classe `dark` no <html> ANTES do React hidratar,
+// lendo a preferência persistida em localStorage (chave betbot_theme).
+const THEME_SCRIPT = `try{if(localStorage.getItem('betbot_theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -57,7 +61,8 @@ export default function RootLayout({
   if (isRedirecting && !isAuthPage) {
     return (
       <html lang="pt-BR" className={`${inter.variable} h-full antialiased`}>
-        <body className="min-h-full bg-slate-50 flex items-center justify-center">
+        <body className="min-h-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+          <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
           <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
         </body>
       </html>
@@ -66,7 +71,8 @@ export default function RootLayout({
 
   return (
     <html lang="pt-BR" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full bg-slate-50 font-sans text-slate-900">
+      <body className="min-h-full bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100">
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <Toaster position="top-right" richColors />
         <div className="flex">
           {!isAuthPage && <Sidebar serverStatus="online" />}

@@ -1,11 +1,23 @@
 @import "tailwindcss";
 
+/* Dark mode class-based no Tailwind 4: variantes `dark:` ativam quando
+   a classe `.dark` está presente no <html> (setada via localStorage). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #f1f5f9; /* slate-100 */
   --foreground: #0f172a; /* slate-900 */
   --card: #ffffff;
   --card-foreground: #0f172a;
   --border: #1e293b; /* slate-800 - borda escura definida */
+}
+
+.dark {
+  --background: #020617; /* slate-950 */
+  --foreground: #f1f5f9; /* slate-100 */
+  --card: #0f172a; /* slate-900 */
+  --card-foreground: #f1f5f9;
+  --border: #334155; /* slate-700 */
 }
 
 @theme inline {

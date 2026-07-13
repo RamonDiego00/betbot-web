@@ -3,10 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   ArrowUpRight,
-  Plus,
   Search,
   Filter,
-  AlertCircle,
   Loader2,
   Wallet,
   CheckCircle2,
@@ -14,6 +12,7 @@ import {
   Upload,
   ShieldCheck,
   Ban,
+  Percent,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -25,54 +24,13 @@ import {
   BillingStatement,
   DashboardSummary,
   LucroMensalItem,
-  MetaFinanceiraItem,
   SaldoCasaItem,
 } from '@/types/api';
-
-// --- TIPOS ---
-interface ProgressCircleProps {
-  current: number;
-  target: number;
-  label: string;
-  color: string;
-}
-
-// --- COMPONENTES AUXILIARES ---
-
-const ProgressCircle = ({ current, target, label, color }: ProgressCircleProps) => {
-  const percentage = target > 0 ? Math.min((current / target) * 100, 100) : 0;
-  return (
-    <div className="flex flex-col items-center gap-2 p-4 bg-white rounded-xl border border-slate-800 shadow-sm">
-      <div className="relative h-24 w-24 flex items-center justify-center">
-        <svg className="h-full w-full" viewBox="0 0 100 100">
-          <circle className="text-slate-100 stroke-current" strokeWidth="8" fill="transparent" r="40" cx="50" cy="50" />
-          <circle
-            className={cn("stroke-current transition-all duration-1000", color)}
-            strokeWidth="8"
-            strokeDasharray={251.2}
-            strokeDashoffset={251.2 - (percentage / 100) * 251.2}
-            strokeLinecap="round"
-            fill="transparent"
-            r="40" cx="50" cy="50"
-          />
-        </svg>
-        <span className="absolute text-xs font-black text-slate-900">{Math.round(percentage)}%</span>
-      </div>
-      <div className="text-center">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
-        <p className="text-xs font-black text-slate-900 uppercase">
-          R$ {current.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} / R$ {target.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-        </p>
-      </div>
-    </div>
-  );
-};
 
 export default function Financeiro() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [saldos, setSaldos] = useState<SaldoCasaItem[]>([]);
   const [lucroMensal, setLucroMensal] = useState<LucroMensalItem[]>([]);
-  const [metas, setMetas] = useState<MetaFinanceiraItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   // --- Comprovante de lucro mensal ---
@@ -110,17 +68,15 @@ export default function Financeiro() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [summaryData, saldosData, lucroData, metasData] = await Promise.allSettled([
+        const [summaryData, saldosData, lucroData] = await Promise.allSettled([
           dashboardService.getSummary(),
           financeiroService.getSaldos(),
           financeiroService.getLucroMensal(),
-          financeiroService.getMetas(),
         ]);
 
         if (summaryData.status === 'fulfilled') setSummary(summaryData.value);
         if (saldosData.status === 'fulfilled') setSaldos(saldosData.value);
         if (lucroData.status === 'fulfilled') setLucroMensal(lucroData.value);
-        if (metasData.status === 'fulfilled') setMetas(metasData.value);
       } catch (error) {
         console.error('Error fetching financial data:', error);
       } finally {
@@ -134,7 +90,7 @@ export default function Financeiro() {
 
   const handleUploadComprovante = async () => {
     if (!uploadPeriod || !uploadFile) {
-      toast.error('Selecione o período e o arquivo PDF do comprovante.');
+      toast.error('Selecione o período e o arquivo do comprovante (print ou PDF).');
       return;
     }
     setUploading(true);
@@ -187,30 +143,35 @@ export default function Financeiro() {
 
   const maxLucro = lucroMensal.length > 0 ? Math.max(...lucroMensal.map((d) => Math.abs(d.valor)), 1) : 1;
 
-  const metaLucro = metas.find((m) => m.tipo === 'lucro');
-  const metaPerda = metas.find((m) => m.tipo === 'perda');
+  // Repasse da plataforma: 20% do lucro declarado no comprovante do mês corrente
+  const now = new Date();
+  const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const currentMonthLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  const comprovanteDoMes = comprovantes.find((c) => c.period === currentPeriod);
+  const lucroDeclaradoDoMes = comprovanteDoMes?.declaredProfit ?? null;
+  const repasseDoMes = lucroDeclaradoDoMes != null ? Math.max(lucroDeclaradoDoMes, 0) * 0.20 : null;
 
   const overviewCards = summary ? [
     {
       label: 'Saldo Total',
       value: `R$ ${(summary.totalBalance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: Wallet,
-      color: 'text-indigo-600',
-      bg: 'bg-white border border-slate-800',
+      color: 'text-indigo-600 dark:text-indigo-400',
+      bg: 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800',
     },
     {
-      label: 'Lucro Total',
+      label: 'Lucro do Mês',
       value: `R$ ${(summary.monthlyProfit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: ArrowUpRight,
-      color: 'text-emerald-700',
-      bg: 'bg-white border border-slate-800',
+      color: 'text-emerald-700 dark:text-emerald-400',
+      bg: 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800',
     },
     {
       label: 'ROI Geral',
       value: `${summary.overallRoi || 0}%`,
       icon: ArrowUpRight,
-      color: 'text-amber-600',
-      bg: 'bg-white border border-slate-800',
+      color: 'text-amber-600 dark:text-amber-400',
+      bg: 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800',
     },
   ] : [];
 
@@ -227,16 +188,8 @@ export default function Financeiro() {
       {/* Header */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-black text-slate-900 tracking-tight italic uppercase">Financeiro</h2>
-          <p className="text-sm text-slate-500 mt-1 font-bold uppercase tracking-tighter">Gerencie seus depósitos, saques e metas financeiras.</p>
-        </div>
-        <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-800 rounded-lg text-xs font-black uppercase tracking-wider text-slate-900 hover:bg-slate-50 transition-all shadow-sm">
-            <Plus className="h-4 w-4" /> Novo Registro
-          </button>
-          <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm">
-            Exportar Relatório
-          </button>
+          <h2 className="text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight italic uppercase">Financeiro</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-bold uppercase tracking-tighter">Acompanhe seus saldos, lucros e o repasse da plataforma.</p>
         </div>
       </header>
 
@@ -245,24 +198,24 @@ export default function Financeiro() {
         <div className="lg:col-span-1 flex flex-col gap-4">
           {overviewCards.map((card, idx) => (
             <div key={idx} className={cn("p-5 rounded-xl flex items-center gap-4 shadow-sm", card.bg)}>
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-800/10">
+              <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700/50">
                 <card.icon className={cn("h-6 w-6", card.color)} />
               </div>
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{card.label}</p>
-                <h4 className="text-2xl font-black text-slate-900 tracking-tight">{card.value}</h4>
+                <p className="text-[10px] font-black text-slate-400 dark:text-slate-550 uppercase tracking-widest">{card.label}</p>
+                <h4 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{card.value}</h4>
               </div>
             </div>
           ))}
         </div>
 
         {/* Gráfico de barras — dados reais da API */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-800 shadow-sm flex flex-col justify-between">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Histórico de Lucro por Mês</h3>
+            <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest">Histórico de Lucro por Mês</h3>
           </div>
           {lucroMensal.length === 0 ? (
-            <div className="flex items-center justify-center h-40 text-xs text-slate-400 italic font-bold">Sem dados mensais</div>
+            <div className="flex items-center justify-center h-40 text-xs text-slate-400 dark:text-slate-500 italic font-bold">Sem dados mensais</div>
           ) : (
             <div className="flex items-end justify-between h-40 px-2 gap-4">
               {lucroMensal.map((data, idx) => (
@@ -274,11 +227,11 @@ export default function Financeiro() {
                     )}
                     style={{ height: `${(Math.abs(data.valor) / maxLucro) * 100}%`, minHeight: '4px' }}
                   >
-                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-black py-1.5 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 uppercase tracking-tighter">
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-slate-950 text-white text-[10px] font-black py-1.5 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 uppercase tracking-tighter">
                       R$ {data.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{data.mes}</span>
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-tighter">{data.mes}</span>
                 </div>
               ))}
             </div>
@@ -290,41 +243,41 @@ export default function Financeiro() {
         {/* BLOCO 2: Saldos por Casa */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between px-1">
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Saldos por Casa</h3>
+            <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest">Saldos por Casa</h3>
             <div className="flex items-center gap-3">
-              <button className="text-slate-400 hover:text-indigo-600 transition-colors"><Search className="h-4 w-4" /></button>
-              <button className="text-slate-400 hover:text-indigo-600 transition-colors"><Filter className="h-4 w-4" /></button>
+              <button className="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"><Search className="h-4 w-4" /></button>
+              <button className="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"><Filter className="h-4 w-4" /></button>
             </div>
           </div>
-          <div className="bg-white rounded-xl border border-slate-800 overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="bg-slate-50/50 border-b border-slate-800">
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Plataforma</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Moeda</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Saldo</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Status</th>
+                  <tr className="bg-slate-50/50 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800">
+                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Plataforma</th>
+                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Moeda</th>
+                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Saldo</th>
+                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {saldos.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-6 py-8 text-center text-xs text-slate-500 italic">Nenhum saldo encontrado.</td>
+                      <td colSpan={4} className="px-6 py-8 text-center text-xs text-slate-500 dark:text-slate-400 italic">Nenhum saldo encontrado.</td>
                     </tr>
                   ) : saldos.map((s, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors group cursor-default">
+                    <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group cursor-default">
                       <td className="px-6 py-4">
-                        <span className="text-xs font-black uppercase text-slate-700">{s.casa}</span>
+                        <span className="text-xs font-black uppercase text-slate-700 dark:text-slate-300">{s.casa}</span>
                       </td>
-                      <td className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">BRL</td>
-                      <td className="px-6 py-4 text-xs font-black text-slate-900">
+                      <td className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">BRL</td>
+                      <td className="px-6 py-4 text-xs font-black text-slate-900 dark:text-slate-100">
                         {s.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end items-center gap-1.5">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                          <span className="text-[10px] font-black text-emerald-700 uppercase tracking-tighter">{s.statusSincronizacao}</span>
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-450" />
+                          <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-450 uppercase tracking-tighter">{s.statusSincronizacao}</span>
                         </div>
                       </td>
                     </tr>
@@ -335,78 +288,80 @@ export default function Financeiro() {
           </div>
         </div>
 
-        {/* BLOCO 3: Metas Financeiras — dados reais */}
+        {/* BLOCO 3: Repasse da Plataforma */}
         <div className="space-y-4">
-          <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest px-1">Metas e Limites</h3>
-          <div className="grid grid-cols-1 gap-4">
-            {metaLucro && (
-              <ProgressCircle
-                current={metaLucro.valorAtual}
-                target={metaLucro.metaOuLimite}
-                label="Meta de Lucro"
-                color="text-emerald-500"
-              />
-            )}
-            {metaPerda && (
-              <ProgressCircle
-                current={metaPerda.valorAtual}
-                target={metaPerda.metaOuLimite}
-                label="Limite de Perda"
-                color="text-rose-500"
-              />
-            )}
-
-            <div className="bg-white border border-slate-800 rounded-xl p-5 shadow-sm relative overflow-hidden group hover:border-indigo-400 transition-all">
-              <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertCircle className="h-4 w-4 text-indigo-600" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Dica de Gestão</span>
+          <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest px-1">Repasse da Plataforma (20%)</h3>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
+            {repasseDoMes != null ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Percent className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-450">{currentMonthLabel}</span>
                 </div>
-                <p className="text-xs font-bold leading-relaxed text-slate-700">
-                  {metaLucro && metaLucro.metaOuLimite > metaLucro.valorAtual ? (
-                    <>Você está a <span className="font-black text-indigo-600">R$ {(metaLucro.metaOuLimite - metaLucro.valorAtual).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span> de atingir sua meta. Mantenha a disciplina na stake!</>
-                  ) : (
-                    <>Continue acompanhando suas metas para manter a saúde da banca.</>
-                  )}
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Lucro Declarado</p>
+                  <p className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight">
+                    R$ {(lucroDeclaradoDoMes ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Valor do Repasse</p>
+                  <p className="text-3xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight">
+                    R$ {repasseDoMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <p className="text-xs font-bold leading-relaxed text-slate-500 dark:text-slate-400">
+                  20% do lucro declarado no comprovante de {currentMonthLabel}.
                 </p>
               </div>
-            </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center gap-3 py-6">
+                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700/50">
+                  <Percent className="h-6 w-6 text-slate-400 dark:text-slate-500" />
+                </div>
+                <p className="text-xs font-bold leading-relaxed text-slate-500 dark:text-slate-400">
+                  {comprovanteDoMes
+                    ? 'O comprovante deste mês foi enviado sem lucro declarado. Reenvie informando o lucro para calcular o repasse.'
+                    : 'Envie o comprovante do mês na seção abaixo para calcular o repasse.'}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* BLOCO 4: Comprovante de Lucro Mensal */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="bg-white border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
-          <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Enviar Comprovante de Lucro Mensal</h3>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+          <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest">Enviar Comprovante de Lucro</h3>
           <div className="space-y-3">
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Período</label>
+              <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Período</label>
               <input
                 type="month"
                 value={uploadPeriod}
                 onChange={(e) => setUploadPeriod(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-800 rounded-lg text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Lucro Declarado (opcional)</label>
+              <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Lucro Declarado (opcional)</label>
               <input
                 type="number"
                 step="0.01"
                 placeholder="R$ 0,00"
                 value={uploadProfit}
                 onChange={(e) => setUploadProfit(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-800 rounded-lg text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Arquivo PDF</label>
+              <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Arquivo (print ou PDF)</label>
               <input
                 type="file"
-                accept="application/pdf"
+                accept="application/pdf,image/jpeg,image/png"
                 onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
-                className="w-full text-xs font-bold text-slate-700 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border file:border-slate-800 file:bg-slate-50 file:text-xs file:font-black file:uppercase file:tracking-wider file:text-slate-900 hover:file:bg-slate-100 file:cursor-pointer cursor-pointer"
+                className="w-full text-xs font-bold text-slate-700 dark:text-slate-400 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border file:border-slate-200 dark:file:border-slate-800 file:bg-slate-50 dark:file:bg-slate-800 file:text-xs file:font-black file:uppercase file:tracking-wider file:text-slate-900 dark:file:text-slate-100 hover:file:bg-slate-100 dark:hover:file:bg-slate-700 file:cursor-pointer cursor-pointer"
               />
             </div>
             <button
@@ -421,32 +376,32 @@ export default function Financeiro() {
         </div>
 
         <div className="lg:col-span-2 space-y-4">
-          <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest px-1">Meus Comprovantes</h3>
-          <div className="bg-white rounded-xl border border-slate-800 overflow-hidden shadow-sm">
+          <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest px-1">Meus Comprovantes</h3>
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="bg-slate-50/50 border-b border-slate-800">
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Período</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Enviado em</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Lucro Declarado</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Arquivo</th>
+                  <tr className="bg-slate-50/50 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800">
+                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Período</th>
+                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Enviado em</th>
+                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Lucro Declarado</th>
+                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Arquivo</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {comprovantes.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-6 py-8 text-center text-xs text-slate-500 italic">Nenhum comprovante enviado ainda.</td>
+                      <td colSpan={4} className="px-6 py-8 text-center text-xs text-slate-500 dark:text-slate-400 italic">Nenhum comprovante enviado ainda.</td>
                     </tr>
                   ) : comprovantes.map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-50/50 transition-colors group cursor-default">
+                    <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group cursor-default">
                       <td className="px-6 py-4">
-                        <span className="text-xs font-black uppercase text-slate-700">{c.period}</span>
+                        <span className="text-xs font-black uppercase text-slate-700 dark:text-slate-300">{c.period}</span>
                       </td>
-                      <td className="px-6 py-4 text-xs font-bold text-slate-500">
+                      <td className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400">
                         {new Date(c.uploadedAt).toLocaleDateString('pt-BR')}
                       </td>
-                      <td className="px-6 py-4 text-xs font-black text-slate-900">
+                      <td className="px-6 py-4 text-xs font-black text-slate-900 dark:text-slate-100">
                         {c.declaredProfit != null
                           ? `R$ ${c.declaredProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
                           : '—'}
@@ -455,7 +410,7 @@ export default function Financeiro() {
                         <button
                           onClick={() => handleOpenComprovante(c.id)}
                           disabled={openingId === c.id}
-                          className="inline-flex items-center gap-1.5 text-[10px] font-black text-indigo-600 hover:text-indigo-700 uppercase tracking-tighter disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 text-[10px] font-black text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 uppercase tracking-tighter disabled:opacity-50"
                         >
                           <FileText className="h-3.5 w-3.5" />
                           {openingId === c.id ? 'Abrindo...' : c.fileName}
@@ -474,35 +429,35 @@ export default function Financeiro() {
       {isAdmin && (
         <div className="space-y-4">
           <div className="flex items-center gap-2 px-1">
-            <ShieldCheck className="h-4 w-4 text-indigo-600" />
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Cobrança — Todos os Usuários</h3>
+            <ShieldCheck className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest">Cobrança — Todos os Usuários</h3>
           </div>
-          <div className="bg-white rounded-xl border border-slate-800 overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="bg-slate-50/50 border-b border-slate-800">
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Usuário</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Período</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Lucro Declarado</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Arquivo</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ação</th>
+                  <tr className="bg-slate-50/50 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800">
+                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Usuário</th>
+                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Período</th>
+                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Lucro Declarado</th>
+                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Arquivo</th>
+                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Status</th>
+                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Ação</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {adminComprovantes.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-xs text-slate-500 italic">Nenhum comprovante enviado ainda.</td>
+                      <td colSpan={6} className="px-6 py-8 text-center text-xs text-slate-500 dark:text-slate-400 italic">Nenhum comprovante enviado ainda.</td>
                     </tr>
                   ) : adminComprovantes.map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-50/50 transition-colors group cursor-default">
+                    <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group cursor-default">
                       <td className="px-6 py-4">
-                        <span className="text-xs font-black text-slate-900">{c.userName}</span>
-                        <p className="text-[10px] font-bold text-slate-400">{c.userEmail}</p>
+                        <span className="text-xs font-black text-slate-900 dark:text-slate-100">{c.userName}</span>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">{c.userEmail}</p>
                       </td>
-                      <td className="px-6 py-4 text-xs font-black uppercase text-slate-700">{c.period}</td>
-                      <td className="px-6 py-4 text-xs font-black text-slate-900">
+                      <td className="px-6 py-4 text-xs font-black uppercase text-slate-700 dark:text-slate-300">{c.period}</td>
+                      <td className="px-6 py-4 text-xs font-black text-slate-900 dark:text-slate-100">
                         {c.declaredProfit != null
                           ? `R$ ${c.declaredProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
                           : '—'}
@@ -511,7 +466,7 @@ export default function Financeiro() {
                         <button
                           onClick={() => handleOpenComprovante(c.id)}
                           disabled={openingId === c.id}
-                          className="inline-flex items-center gap-1.5 text-[10px] font-black text-indigo-600 hover:text-indigo-700 uppercase tracking-tighter disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 text-[10px] font-black text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 uppercase tracking-tighter disabled:opacity-50"
                         >
                           <FileText className="h-3.5 w-3.5" />
                           {openingId === c.id ? 'Abrindo...' : c.fileName}
@@ -520,13 +475,13 @@ export default function Financeiro() {
                       <td className="px-6 py-4">
                         {c.userStatus === 'ACTIVE' ? (
                           <div className="flex items-center gap-1.5">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                            <span className="text-[10px] font-black text-emerald-700 uppercase tracking-tighter">Ativo</span>
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-450" />
+                            <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-455 uppercase tracking-tighter">Ativo</span>
                           </div>
                         ) : (
                           <div className="flex items-center gap-1.5">
-                            <Ban className="h-3.5 w-3.5 text-rose-600" />
-                            <span className="text-[10px] font-black text-rose-700 uppercase tracking-tighter">Bloqueado</span>
+                            <Ban className="h-3.5 w-3.5 text-rose-600 dark:text-rose-450" />
+                            <span className="text-[10px] font-black text-rose-700 dark:text-rose-455 uppercase tracking-tighter">Bloqueado</span>
                           </div>
                         )}
                       </td>
@@ -537,8 +492,8 @@ export default function Financeiro() {
                           className={cn(
                             "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-50",
                             c.userStatus === 'ACTIVE'
-                              ? "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100"
-                              : "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                              ? "bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-450 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/50"
+                              : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-450 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50"
                           )}
                         >
                           {updatingUserId === c.userId

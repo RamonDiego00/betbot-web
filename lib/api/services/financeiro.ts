@@ -1,5 +1,5 @@
 import { apiClient } from '../client';
-import { BillingStatement, LucroMensalItem, MetaFinanceiraItem, SaldoCasaItem } from '@/types/api';
+import { BillingStatement, LucroMensalItem, SaldoCasaItem } from '@/types/api';
 
 export const financeiroService = {
   /**
@@ -8,15 +8,6 @@ export const financeiroService = {
    */
   getLucroMensal: async (): Promise<LucroMensalItem[]> => {
     const response = await apiClient.get<LucroMensalItem[]>('/api/v1/financeiro/lucro-mensal');
-    return response.data ?? [];
-  },
-
-  /**
-   * Metas e limites financeiros (para os círculos de progresso).
-   * GET /api/v1/financeiro/metas-limites → MetaFinanceiraItem[]
-   */
-  getMetas: async (): Promise<MetaFinanceiraItem[]> => {
-    const response = await apiClient.get<MetaFinanceiraItem[]>('/api/v1/financeiro/metas-limites');
     return response.data ?? [];
   },
 
