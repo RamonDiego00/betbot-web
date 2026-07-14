@@ -57,7 +57,7 @@ export default function Analytics() {
       label: 'Total de Apostas',
       value: String(totalBets),
       icon: BarChart3,
-      accent: 'text-indigo-600',
+      accent: 'text-brand-600',
     },
   ];
 
@@ -73,7 +73,7 @@ export default function Analytics() {
         {kpis.map((kpi) => (
           <div key={kpi.label} className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-widest">{kpi.label}</span>
+              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{kpi.label}</span>
               <kpi.icon className={cn("h-5 w-5", kpi.accent)} />
             </div>
             <p className={cn("mt-3 text-4xl font-black tracking-tight", kpi.accent)}>{kpi.value}</p>
@@ -85,7 +85,7 @@ export default function Analytics() {
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
           <h3 className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-indigo-500 dark:text-indigo-400" />
+            <BarChart3 className="h-5 w-5 text-brand-500 dark:text-brand-400" />
             Performance por Mercado
           </h3>
           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Mês atual</span>
@@ -104,12 +104,12 @@ export default function Analytics() {
                   <span className="text-xs font-medium text-slate-400 dark:text-slate-500 hidden sm:inline">
                     {stat.totalBets} apostas
                   </span>
-                  <span className="text-xs font-black text-slate-550 dark:text-slate-450 min-w-[52px] text-right">
+                  <span className="text-xs font-black text-slate-500 dark:text-slate-400 min-w-[52px] text-right">
                     {stat.winRate}% WR
                   </span>
                   <span className={cn(
                     "text-xs font-black min-w-[72px] text-right",
-                    stat.roi >= 0 ? "text-emerald-700 dark:text-emerald-450" : "text-rose-700 dark:text-rose-455"
+                    stat.roi >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-500"
                   )}>
                     {stat.roi >= 0 ? '+' : ''}{stat.roi}% ROI
                   </span>

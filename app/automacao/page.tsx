@@ -5,7 +5,6 @@ import {
   Cpu,
   Smartphone,
   Activity,
-  ShieldCheck,
   Terminal,
   Play,
   Pause,
@@ -15,7 +14,6 @@ import {
   ShieldAlert,
   Clock,
   MonitorSmartphone,
-  RotateCcw,
   Target,
   Layers,
 } from 'lucide-react';
@@ -61,7 +59,7 @@ const mapTicketStatus = (status: WorkerBetTicket['status']): BadgeStatus => {
 const StatusBadge = ({ status }: { status: BadgeStatus }) => {
   const styles = {
     pending: "bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700",
-    executing: "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 animate-pulse border-indigo-200 dark:border-indigo-800",
+    executing: "bg-brand-50 dark:bg-brand-950/30 text-brand-600 dark:text-brand-400 animate-pulse border-brand-200 dark:border-brand-800",
     completed: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800",
     failed: "bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800",
     skipped: "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700",
@@ -82,7 +80,7 @@ const StatusBadge = ({ status }: { status: BadgeStatus }) => {
 
 function logLevelColor(level: string) {
   switch (level) {
-    case 'INFO':  return 'text-indigo-400';
+    case 'INFO':  return 'text-brand-400';
     case 'DEBUG': return 'text-slate-400';
     case 'WARN':  return 'text-amber-400';
     case 'ERROR': return 'text-rose-400';
@@ -104,14 +102,15 @@ export default function Automacao() {
   const [frameTimestamp, setFrameTimestamp] = useState(Date.now());
   const sseRef = useRef<EventSource | null>(null);
 
+  // Enquanto o espelhamento está ligado, força o <img> a rebuscar o frame a
+  // cada 2s — incondicional (não depende de deviceStatus, que só atualiza a
+  // cada 15s): senão, se o device conectar DEPOIS da página carregar, o
+  // espelho ficava travado até o usuário desligar/religar manualmente.
   useEffect(() => {
-    if (mirroring && deviceStatus?.status === 'connected') {
-      const interval = setInterval(() => {
-        setFrameTimestamp(Date.now());
-      }, 2000);
-      return () => clearInterval(interval);
-    }
-  }, [mirroring, deviceStatus?.status]);
+    if (!mirroring) return;
+    const interval = setInterval(() => setFrameTimestamp(Date.now()), 2000);
+    return () => clearInterval(interval);
+  }, [mirroring]);
   const logCounter = useRef(0);
 
   useEffect(() => {
@@ -236,6 +235,17 @@ export default function Automacao() {
     }
     fetchData();
 
+    // Status do server/device é uma foto do momento — sem isso, "Device Android"
+    // e o espelhamento ficam presos ao estado de quando a página abriu.
+    const statusInterval = setInterval(async () => {
+      const [serverData, deviceData] = await Promise.allSettled([
+        automationService.getServerStatus(),
+        automationService.getDeviceStatus(),
+      ]);
+      if (serverData.status === 'fulfilled') setServerStatus(serverData.value);
+      if (deviceData.status === 'fulfilled') setDeviceStatus(deviceData.value);
+    }, 15000);
+
     sseRef.current = automationService.streamLogs(
       (log: AutomationLogEvent) => {
         const entry: LogEntry = {
@@ -250,6 +260,7 @@ export default function Automacao() {
     );
 
     return () => {
+      clearInterval(statusInterval);
       sseRef.current?.close();
     };
   }, []);
@@ -257,12 +268,25 @@ export default function Automacao() {
   const isServerOnline = serverStatus?.serverStatus === 'alive';
   const isDeviceOnline = deviceStatus?.status === 'connected';
 
+  const lastSeenLabel = (() => {
+    if (!serverStatus?.lastSeen) return 'Nunca';
+    const diffMs = Date.now() - new Date(serverStatus.lastSeen).getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return 'Agora mesmo';
+    if (diffMin < 60) return `Há ${diffMin} min`;
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return `Há ${diffH}h`;
+    return `Há ${Math.floor(diffH / 24)}d`;
+  })();
+
+  const pendingCount = (dailyBets?.tickets ?? []).filter((t) => t.status === 'PENDING').length;
+
   const stats = [
     {
       label: 'Status do Server',
       value: isServerOnline ? 'Online' : 'Offline',
       icon: Activity,
-      color: isServerOnline ? 'text-emerald-700 dark:text-emerald-450' : 'text-rose-700 dark:text-rose-455',
+      color: isServerOnline ? 'text-emerald-700 dark:text-emerald-500' : 'text-rose-700 dark:text-rose-500',
       bg: 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800',
       subtext: serverStatus?.serverVersion ?? 'N/A',
     },
@@ -270,25 +294,25 @@ export default function Automacao() {
       label: 'Device Android',
       value: isDeviceOnline ? 'Conectado' : 'Desconectado',
       icon: Smartphone,
-      color: isDeviceOnline ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500',
+      color: isDeviceOnline ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-slate-500',
       bg: 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800',
-      subtext: deviceStatus?.model ?? 'Nenhum',
+      subtext: deviceStatus?.model && isDeviceOnline ? deviceStatus.model : 'Nenhum dispositivo pareado ainda',
     },
     {
-      label: 'Saúde do Fluxo',
-      value: isServerOnline && isDeviceOnline ? 'Estável' : 'Atenção',
-      icon: ShieldCheck,
-      color: isServerOnline && isDeviceOnline ? 'text-emerald-700 dark:text-emerald-455' : 'text-amber-600 dark:text-amber-455',
+      label: 'Última Sincronização',
+      value: lastSeenLabel,
+      icon: Clock,
+      color: isServerOnline ? 'text-emerald-700 dark:text-emerald-500' : 'text-amber-600 dark:text-amber-500',
       bg: 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800',
-      subtext: deviceStatus ? `Bateria: ${deviceStatus.batteryLevel}%` : 'N/D',
+      subtext: 'Último check-in do agente',
     },
     {
-      label: 'Execuções Hoje',
-      value: (dailyBets?.tickets?.length ?? 0).toString(),
+      label: 'Pendentes Hoje',
+      value: pendingCount.toString(),
       icon: Zap,
       color: 'text-amber-500 dark:text-amber-400',
       bg: 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800',
-      subtext: 'Total Gerado',
+      subtext: `${(dailyBets?.tickets?.length ?? 0)} gerados no total`,
     },
   ];
 
@@ -307,7 +331,7 @@ export default function Automacao() {
         <div>
           <h2 className="text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight italic uppercase">Automação Mobile</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 font-bold uppercase tracking-tighter">
-            <Cpu className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+            <Cpu className="h-4 w-4 text-brand-600 dark:text-brand-400" />
             Controlando Server Local via Maestro Flow
           </p>
         </div>
@@ -315,7 +339,7 @@ export default function Automacao() {
           <div className="flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 shadow-sm">
             <span className={cn(
               "text-[10px] font-black uppercase tracking-wider",
-              automationMode === 'AUTO' ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500"
+              automationMode === 'AUTO' ? "text-brand-600 dark:text-brand-400" : "text-slate-400 dark:text-slate-500"
             )}>
               Automático
             </span>
@@ -326,8 +350,8 @@ export default function Automacao() {
               aria-label="Alternar entre modo automático e manual"
               onClick={() => handleModeChange(automationMode === 'AUTO' ? 'MANUAL' : 'AUTO')}
               className={cn(
-                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2",
-                automationMode === 'MANUAL' ? "bg-indigo-600" : "bg-slate-200 dark:bg-slate-800"
+                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2",
+                automationMode === 'MANUAL' ? "bg-brand-600" : "bg-slate-200 dark:bg-slate-800"
               )}
             >
               <span className={cn(
@@ -337,7 +361,7 @@ export default function Automacao() {
             </button>
             <span className={cn(
               "text-[10px] font-black uppercase tracking-wider",
-              automationMode === 'MANUAL' ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500"
+              automationMode === 'MANUAL' ? "text-brand-600 dark:text-brand-400" : "text-slate-400 dark:text-slate-500"
             )}>
               Manual
             </span>
@@ -350,14 +374,11 @@ export default function Automacao() {
                 "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider text-white transition-all shadow-sm",
                 isPaused 
                   ? "bg-emerald-600 hover:bg-emerald-700" 
-                  : "bg-indigo-600 hover:bg-indigo-700"
+                  : "bg-brand-600 hover:bg-brand-700"
               )}
             >
               {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
               {isPaused ? 'Retomar Fluxo' : 'Pausar Automação'}
-            </button>
-            <button type="button" className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-slate-950 hover:bg-slate-800 dark:hover:bg-slate-900 text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all border border-transparent dark:border-slate-800 shadow-sm">
-              <RotateCcw className="h-4 w-4" /> Reiniciar Server
             </button>
           </div>
         </div>
@@ -407,7 +428,7 @@ export default function Automacao() {
                             onChange={(e) => handleTicketStatusToggle(ticket, e.target.checked)}
                             aria-label={`Incluir ticket ${ticket.ticket_id} na execução`}
                             className={cn(
-                              "h-4 w-4 rounded border-slate-400 text-indigo-600 focus:ring-2 focus:ring-indigo-500/40 accent-indigo-600",
+                              "h-4 w-4 rounded border-slate-400 text-brand-600 focus:ring-2 focus:ring-brand-500/40 accent-brand-600",
                               isLocked && "opacity-40 cursor-not-allowed"
                             )}
                           />
@@ -440,7 +461,7 @@ export default function Automacao() {
           <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
-                <Clock className="h-4 w-4 text-indigo-600 dark:text-indigo-400" /> Agendamento da Automação
+                <Clock className="h-4 w-4 text-brand-600 dark:text-brand-400" /> Agendamento da Automação
               </h3>
               <button
                 type="button"
@@ -449,8 +470,8 @@ export default function Automacao() {
                 aria-label="Ativar ou desativar o agendamento da automação"
                 onClick={handleScheduleEnabledToggle}
                 className={cn(
-                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2",
-                  scheduleEnabled ? "bg-indigo-600" : "bg-slate-200 dark:bg-slate-800"
+                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2",
+                  scheduleEnabled ? "bg-brand-600" : "bg-slate-200 dark:bg-slate-800"
                 )}
               >
                 <span className={cn(
@@ -470,7 +491,7 @@ export default function Automacao() {
                 disabled={!scheduleEnabled}
                 onChange={(e) => handleScheduleTimeChange(e.target.value)}
                 className={cn(
-                  "bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-sm font-black text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40",
+                  "bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-sm font-black text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40",
                   !scheduleEnabled && "opacity-40 cursor-not-allowed"
                 )}
               />
@@ -503,19 +524,25 @@ export default function Automacao() {
                   </span>
                   <span className={cn("h-1.5 w-1.5 rounded-full animate-pulse", isDeviceOnline ? "bg-emerald-500" : "bg-amber-500")} />
                 </div>
-                <div className="aspect-[9/19] w-full bg-slate-900 dark:bg-slate-950 rounded-lg border border-slate-800 dark:border-slate-800 flex items-center justify-center overflow-hidden">
+                <div className="aspect-[9/19] w-full bg-slate-900 dark:bg-slate-950 rounded-lg border border-slate-800 dark:border-slate-800 flex items-center justify-center overflow-hidden relative">
                   {isDeviceOnline ? (
-                    <img 
+                    <img
+                      key={frameTimestamp}
                       src={`${process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080'}/api/v1/worker/screen-frame?t=${frameTimestamp}`}
-                      alt="Device Screen"
+                      alt="Tela do dispositivo"
                       className="w-full h-full object-contain"
                       onError={(e) => {
-                        e.currentTarget.style.display = 'none';
+                        // Device conectado mas nenhum frame chegou ainda (agente local não
+                        // envia screenshot até a próxima execução) — não some a imagem,
+                        // deixa o fundo escuro do container comunicar "ainda sem frame".
+                        e.currentTarget.style.visibility = 'hidden';
                       }}
                     />
                   ) : (
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center leading-relaxed p-4">
-                      Aguardando conexão com o dispositivo…
+                      Nenhum agente local conectado.
+                      <br />
+                      Configure-o na aba Setup.
                     </p>
                   )}
                 </div>
@@ -556,10 +583,10 @@ export default function Automacao() {
           </div>
 
           {/* Device Preview */}
-          <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-sm transition-all hover:border-indigo-400 dark:hover:border-indigo-500 group">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-sm transition-all hover:border-brand-400 dark:hover:border-brand-500 group">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 bg-slate-900 dark:bg-slate-950 rounded-lg flex items-center justify-center border border-slate-800 dark:border-slate-800">
-                <Smartphone className="h-6 w-6 text-indigo-400 group-hover:scale-110 transition-transform" />
+                <Smartphone className="h-6 w-6 text-brand-400 group-hover:scale-110 transition-transform" />
               </div>
               <div className="space-y-0.5">
                 <p className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase">{deviceStatus?.model || 'Sem device'}</p>

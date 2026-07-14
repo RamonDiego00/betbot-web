@@ -43,7 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ serverStatus = 'online' }) => 
       {/* Header com Logo e Status */}
       <div className="p-6 flex flex-col gap-5">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-100 dark:shadow-none">
+          <div className="h-9 w-9 bg-brand-600 rounded-xl flex items-center justify-center shadow-lg shadow-brand-100 dark:shadow-none">
             <span className="text-white font-black text-xl">B</span>
           </div>
           <h1 className="text-xl font-black tracking-tighter text-slate-900 dark:text-slate-100 font-sans uppercase">
@@ -79,13 +79,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ serverStatus = 'online' }) => 
               className={cn(
                 "group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all border border-transparent",
                 isActive 
-                  ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 shadow-sm border-slate-200 dark:border-slate-800" 
+                  ? "bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 shadow-sm border-slate-200 dark:border-slate-800" 
                   : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-slate-100"
               )}
             >
               <Icon className={cn(
                 "h-4 w-4 transition-colors",
-                isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300"
+                isActive ? "text-brand-600 dark:text-brand-400" : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300"
               )} />
               {item.label}
             </Link>

@@ -38,7 +38,7 @@ const StatCard = ({ label, value, icon: Icon, trend, type }: StatCardProps) => (
         "text-[10px] font-black px-2 py-0.5 rounded-full border",
         type === 'success' ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800" : 
         type === 'danger' ? "bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800" : 
-        "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-750"
+        "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700"
       )}>
         {trend}
       </span>
@@ -134,7 +134,7 @@ export default function Dashboard() {
       <header>
         <h2 className="text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight italic uppercase">Visão Geral</h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 font-bold uppercase tracking-tighter">
-          <Calendar className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+          <Calendar className="h-4 w-4 text-brand-600 dark:text-brand-400" />
           {formattedDate}
         </p>
       </header>
@@ -195,7 +195,7 @@ export default function Dashboard() {
                               <span className="text-xs font-bold text-slate-900 dark:text-slate-100 text-left">{match.away}</span>
                             </div>
                           </div>
-                          <div className="w-6 flex justify-end"><Star className="h-3 w-3 text-slate-200 dark:text-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" /></div>
+                          <div className="w-6 flex justify-end"><Star className="h-3 w-3 text-slate-200 dark:text-slate-700 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors" /></div>
                         </div>
                       ))}
                     </div>
@@ -231,7 +231,7 @@ export default function Dashboard() {
                       </div>
                       <div className="text-right">
                         <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Odd Total</p>
-                        <p className="text-xs font-black text-indigo-600 dark:text-indigo-400">{ticket.total_odd.toFixed(2)}</p>
+                        <p className="text-xs font-black text-brand-600 dark:text-brand-400">{ticket.total_odd.toFixed(2)}</p>
                       </div>
                     </div>
                   </div>
@@ -240,7 +240,7 @@ export default function Dashboard() {
                     {ticket.matches.map((match) => (
                       <div key={match.match_id} className="rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 p-3 space-y-2">
                         <h4 className="text-[11px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-wide flex items-center gap-1.5">
-                          <Target className="h-3 w-3 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                          <Target className="h-3 w-3 text-brand-500 dark:text-brand-400 shrink-0" />
                           {match.match_name}
                         </h4>
 

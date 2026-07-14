@@ -63,7 +63,7 @@ export default function RootLayout({
       <html lang="pt-BR" className={`${inter.variable} h-full antialiased`}>
         <body className="min-h-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
           <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-          <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
+          <Loader2 className="h-10 w-10 animate-spin text-brand-600" />
         </body>
       </html>
     );

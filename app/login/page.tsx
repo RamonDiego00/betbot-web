@@ -46,7 +46,7 @@ function LoginPageInner() {
     <div className="min-h-[80vh] flex flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="w-full max-w-md bg-white p-8 rounded-3xl border border-slate-200 shadow-xl space-y-8">
         <div className="text-center space-y-2">
-          <div className="h-16 w-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-200">
+          <div className="h-16 w-16 bg-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-brand-200">
             <span className="text-white font-bold text-3xl">B</span>
           </div>
           <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Bem-vindo ao BetBot</h2>
@@ -103,7 +103,7 @@ function LoginPageInner() {
         <div className="pt-6 border-t border-slate-100">
           <p className="text-center text-xs text-slate-400 font-medium leading-relaxed">
             Ao entrar, você concorda com nossos <br />
-            <span className="text-indigo-600 hover:underline cursor-pointer">Termos de Uso</span> e <span className="text-indigo-600 hover:underline cursor-pointer">Política de Privacidade</span>.
+            <span className="text-brand-600 hover:underline cursor-pointer">Termos de Uso</span> e <span className="text-brand-600 hover:underline cursor-pointer">Política de Privacidade</span>.
           </p>
         </div>
       </div>

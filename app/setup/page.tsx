@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ChevronDown,
   ChevronUp,
@@ -48,7 +48,7 @@ const CommandBlock = ({ command }: CommandBlockProps) => {
           "shrink-0 h-8 w-8 flex items-center justify-center rounded-lg border transition-all duration-200",
           copied
             ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400"
-            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-850 hover:text-slate-700 dark:hover:text-slate-200"
+            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-700 dark:hover:text-slate-200"
         )}
       >
         {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4.5 w-4.5" />}
@@ -57,12 +57,17 @@ const CommandBlock = ({ command }: CommandBlockProps) => {
   );
 };
 
+const STEP_ORDER = ['token', 'instalacao', 'credenciais', 'execucao'];
+
 export default function Setup() {
   const [token, setToken] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [platform, setPlatform] = useState<'windows' | 'mac'>('windows');
   const [apiBaseUrl, setApiBaseUrl] = useState('http://localhost:8080');
-  const [openSteps, setOpenSteps] = useState<string[]>(['token', 'instalacao', 'credenciais', 'execucao']);
+  // Só um passo aberto por vez (estilo wizard) — os 4 abertos ao mesmo tempo
+  // era a principal causa da sensação de "complicado" reportada pelo usuário.
+  const [openStep, setOpenStep] = useState<string>('token');
+  const [visitedSteps, setVisitedSteps] = useState<string[]>(['token']);
 
   const generateDeviceToken = async () => {
     setIsGenerating(false);
@@ -85,8 +90,20 @@ export default function Setup() {
     }
   };
 
-  const toggleStep = (id: string) =>
-    setOpenSteps((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
+  // Ao gerar o token, avança automaticamente pro próximo passo — reduz a
+  // ação do usuário de "abrir + fechar manualmente cada etapa" pra zero.
+  useEffect(() => {
+    if (token && openStep === 'token') {
+      setOpenStep('instalacao');
+      setVisitedSteps((prev) => (prev.includes('instalacao') ? prev : [...prev, 'instalacao']));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  const toggleStep = (id: string) => {
+    setOpenStep((prev) => (prev === id ? '' : id));
+    setVisitedSteps((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  };
 
   const getPowerShellCommand = () => {
     const activeToken = token || "SEU_TOKEN_AQUI";
@@ -120,57 +137,84 @@ export default function Setup() {
         </div>
         <ul className="text-xs font-bold text-slate-500 dark:text-slate-400 space-y-2 list-disc list-inside">
           <li>
-            <strong className="text-slate-850 dark:text-slate-350">Apenas Celular Android Físico:</strong> Emuladores são detectados pelo Bet365 e geram banimento da conta.
+            <strong className="text-slate-900 dark:text-slate-300">Apenas Celular Android Físico:</strong> Emuladores são detectados pelo Bet365 e geram banimento da conta.
           </li>
           <li>
-            <strong className="text-slate-850 dark:text-slate-350">Tela Sempre Ativa:</strong> Ative &quot;Stay awake&quot; nas Opções do Desenvolvedor do Android para que o Maestro consiga simular cliques.
+            <strong className="text-slate-900 dark:text-slate-300">Tela Sempre Ativa:</strong> Ative &quot;Stay awake&quot; nas Opções do Desenvolvedor do Android para que o Maestro consiga simular cliques.
           </li>
           <li>
-            <strong className="text-slate-850 dark:text-slate-350">Controle Mãos Livres:</strong> Não toque no aparelho durante a execução da aposta para não corromper o fluxo.
+            <strong className="text-slate-900 dark:text-slate-300">Controle Mãos Livres:</strong> Não toque no aparelho durante a execução da aposta para não corromper o fluxo.
           </li>
         </ul>
       </section>
 
+      {/* Trilha de progresso — dá a sensação de wizard guiado em vez de 4 blocos soltos */}
+      <div className="flex items-center gap-2 px-1">
+        {STEP_ORDER.map((id, index) => {
+          const isDone = id === 'token' ? Boolean(token) : visitedSteps.includes(id) && openStep !== id;
+          const isActive = openStep === id;
+          return (
+            <React.Fragment key={id}>
+              <div
+                className={cn(
+                  'h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-[10px] font-black transition-colors',
+                  isDone
+                    ? 'bg-brand-600 text-white'
+                    : isActive
+                      ? 'bg-brand-100 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 border-2 border-brand-600'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
+                )}
+              >
+                {isDone ? <Check className="h-3.5 w-3.5" /> : index + 1}
+              </div>
+              {index < STEP_ORDER.length - 1 && (
+                <div className={cn('h-0.5 flex-1 rounded-full', isDone ? 'bg-brand-600' : 'bg-slate-100 dark:bg-slate-800')} />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+
       {/* Accordion dos Passos de Instalação */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm divide-y divide-slate-100 dark:divide-slate-800">
-        
+
         {/* PASSO 1: Token de Dispositivo */}
         <div>
           <div
             onClick={() => toggleStep('token')}
-            className="p-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-850/40 transition-colors"
+            className="p-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors"
           >
             <div className="flex items-center gap-4">
               <div className="h-9 w-9 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700/50">
-                <KeyRound className="h-4.5 w-4.5 text-indigo-600 dark:text-indigo-400" />
+                <KeyRound className="h-4.5 w-4.5 text-brand-600 dark:text-brand-400" />
               </div>
               <div>
                 <p className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wide">1. Token do Dispositivo</p>
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter">Entenda e gere sua chave de identificação na API</p>
               </div>
             </div>
-            {openSteps.includes('token') ? (
+            {openStep === 'token' ? (
               <ChevronUp className="h-4 w-4 text-slate-400 dark:text-slate-500" />
             ) : (
               <ChevronDown className="h-4 w-4 text-slate-400 dark:text-slate-500" />
             )}
           </div>
 
-          {openSteps.includes('token') && (
+          {openStep === 'token' && (
             <div className="px-5 pb-5 pl-18 space-y-3.5">
-              <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-450 leading-relaxed">
+              <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 leading-relaxed">
                 <p className="mb-2">
-                  <strong className="text-slate-850 dark:text-slate-300">O que é este Token?</strong>
+                  <strong className="text-slate-900 dark:text-slate-300">O que é este Token?</strong>
                 </p>
                 O Token de Dispositivo é uma chave persistente que permite ao seu executor de apostas local (agente de background) se autenticar e comunicar com a nossa API com total autonomia.
-                Isso protege sua conta, pois <strong className="text-slate-850 dark:text-slate-300">elimina a necessidade de fazer logins manuais interativos no terminal ou armazenar senhas do Google em scripts locais</strong>.
+                Isso protege sua conta, pois <strong className="text-slate-900 dark:text-slate-300">elimina a necessidade de fazer logins manuais interativos no terminal ou armazenar senhas do Google em scripts locais</strong>.
               </div>
 
               <div className="flex gap-3 items-center">
                 <button
                   onClick={generateDeviceToken}
                   disabled={isGenerating}
-                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm shrink-0 disabled:opacity-50"
+                  className="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm shrink-0 disabled:opacity-50"
                 >
                   Gerar Token
                 </button>
@@ -179,7 +223,7 @@ export default function Setup() {
                   readOnly
                   placeholder="Seu token aparecerá aqui..."
                   value={token}
-                  className="w-full h-9 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg px-3 text-xs font-mono text-indigo-600 dark:text-indigo-400 focus:outline-none font-bold"
+                  className="w-full h-9 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 text-xs font-mono text-brand-600 dark:text-brand-400 focus:outline-none font-bold"
                 />
               </div>
             </div>
@@ -190,25 +234,25 @@ export default function Setup() {
         <div>
           <div
             onClick={() => toggleStep('instalacao')}
-            className="p-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-850/40 transition-colors"
+            className="p-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors"
           >
             <div className="flex items-center gap-4">
               <div className="h-9 w-9 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700/50">
-                <Download className="h-4.5 w-4.5 text-indigo-600 dark:text-indigo-400" />
+                <Download className="h-4.5 w-4.5 text-brand-600 dark:text-brand-400" />
               </div>
               <div>
                 <p className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wide">2. Baixar e Configurar Agente</p>
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter">Instale as ferramentas com base no seu sistema operacional</p>
               </div>
             </div>
-            {openSteps.includes('instalacao') ? (
+            {openStep === 'instalacao' ? (
               <ChevronUp className="h-4 w-4 text-slate-400 dark:text-slate-500" />
             ) : (
               <ChevronDown className="h-4 w-4 text-slate-400 dark:text-slate-500" />
             )}
           </div>
 
-          {openSteps.includes('instalacao') && (
+          {openStep === 'instalacao' && (
             <div className="px-5 pb-5 pl-18 space-y-4">
               {/* Seletor de abas OS */}
               <div className="flex gap-2 border-b border-slate-100 dark:border-slate-800 pb-1.5">
@@ -245,7 +289,7 @@ export default function Setup() {
                     <a
                       href="/install/setup.ps1"
                       download="setup.ps1"
-                      className="inline-flex items-center gap-2 bg-slate-900 dark:bg-slate-950 hover:bg-slate-850 dark:hover:bg-slate-900 border border-slate-800 dark:border-slate-800 text-white font-bold text-xs px-4 py-2.5 rounded-lg transition-all shadow-sm"
+                      className="inline-flex items-center gap-2 bg-slate-900 dark:bg-slate-950 hover:bg-slate-900 dark:hover:bg-slate-900 border border-slate-800 dark:border-slate-800 text-white font-bold text-xs px-4 py-2.5 rounded-lg transition-all shadow-sm"
                     >
                       <Download className="h-4 w-4" />
                       <span>Baixar setup.ps1</span>
@@ -256,12 +300,12 @@ export default function Setup() {
                         type="text"
                         value={apiBaseUrl}
                         onChange={(e) => setApiBaseUrl(e.target.value)}
-                        className="bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-indigo-600 focus:outline-none w-40"
+                        className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-brand-600 focus:outline-none w-40"
                       />
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-[10px] font-black text-slate-450 uppercase tracking-wide">Comando para executar no Windows:</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Comando para executar no Windows:</span>
                     <CommandBlock command={getPowerShellCommand()} />
                   </div>
                 </div>
@@ -286,13 +330,13 @@ export default function Setup() {
                     <a
                       href="/install/agent.py"
                       download="agent.py"
-                      className="inline-flex items-center gap-2 bg-slate-900 dark:bg-slate-950 hover:bg-slate-850 dark:hover:bg-slate-900 border border-slate-800 dark:border-slate-800 text-white font-bold text-xs px-4 py-2.5 rounded-lg transition-all shadow-sm"
+                      className="inline-flex items-center gap-2 bg-slate-900 dark:bg-slate-950 hover:bg-slate-900 dark:hover:bg-slate-900 border border-slate-800 dark:border-slate-800 text-white font-bold text-xs px-4 py-2.5 rounded-lg transition-all shadow-sm"
                     >
                       <Download className="h-4 w-4" />
                       <span>Baixar agent.py</span>
                     </a>
                     <div className="space-y-1">
-                      <span className="text-[10px] font-black text-slate-450 uppercase tracking-wide">Conteúdo do arquivo config.json local:</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Conteúdo do arquivo config.json local:</span>
                       <CommandBlock command={getMacConfigJson()} />
                     </div>
                   </div>
@@ -306,37 +350,37 @@ export default function Setup() {
         <div>
           <div
             onClick={() => toggleStep('credenciais')}
-            className="p-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-850/40 transition-colors"
+            className="p-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors"
           >
             <div className="flex items-center gap-4">
               <div className="h-9 w-9 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700/50">
-                <ShieldCheck className="h-4.5 w-4.5 text-indigo-600 dark:text-indigo-400" />
+                <ShieldCheck className="h-4.5 w-4.5 text-brand-600 dark:text-brand-400" />
               </div>
               <div>
                 <p className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wide">3. Configurar Credenciais Locais</p>
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter">Credenciais da Bet365 permanecem restritas ao computador</p>
               </div>
             </div>
-            {openSteps.includes('credenciais') ? (
+            {openStep === 'credenciais' ? (
               <ChevronUp className="h-4 w-4 text-slate-400 dark:text-slate-500" />
             ) : (
               <ChevronDown className="h-4 w-4 text-slate-400 dark:text-slate-500" />
             )}
           </div>
 
-          {openSteps.includes('credenciais') && (
+          {openStep === 'credenciais' && (
             <div className="px-5 pb-5 pl-18 space-y-3">
               <p className="text-xs text-slate-500 dark:text-slate-400 font-bold leading-relaxed">
                 Crie um arquivo chamado <code className="font-mono bg-slate-100 dark:bg-slate-800 text-xs px-1.5 py-0.5 rounded text-slate-900 dark:text-slate-100">.env</code> na mesma pasta do agente e configure seu acesso:
               </p>
-              <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-700 dark:text-slate-350">
+              <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-700 dark:text-slate-300">
                 <span className="text-slate-400 block font-bold"># Arquivo .env</span>
-                <span className="text-indigo-600 dark:text-indigo-400">BET365_EMAIL</span>=seu_email@provedor.com<br />
-                <span className="text-indigo-600 dark:text-indigo-400">BET365_PASSWORD</span>=sua_senha_segura_da_bet365
+                <span className="text-brand-600 dark:text-brand-400">BET365_EMAIL</span>=seu_email@provedor.com<br />
+                <span className="text-brand-600 dark:text-brand-400">BET365_PASSWORD</span>=sua_senha_segura_da_bet365
               </div>
-              <div className="p-4 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl flex items-start gap-3">
-                <ShieldCheck className="h-5 w-5 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
-                <p className="text-xs text-slate-500 dark:text-slate-405 font-bold leading-normal">
+              <div className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-start gap-3">
+                <ShieldCheck className="h-5 w-5 text-brand-600 dark:text-brand-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-bold leading-normal">
                   Privacidade Total: Seus dados de login Bet365 são lidos localmente pelo script do Maestro e jamais trafegam ou passam pelo portal ou pela API em nuvem.
                 </p>
               </div>
@@ -348,25 +392,25 @@ export default function Setup() {
         <div>
           <div
             onClick={() => toggleStep('execucao')}
-            className="p-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-850/40 transition-colors"
+            className="p-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors"
           >
             <div className="flex items-center gap-4">
               <div className="h-9 w-9 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700/50">
-                <Smartphone className="h-4.5 w-4.5 text-indigo-600 dark:text-indigo-400" />
+                <Smartphone className="h-4.5 w-4.5 text-brand-600 dark:text-brand-400" />
               </div>
               <div>
                 <p className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wide">4. Executar e Conectar Celular</p>
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter">Inicie a automação do executor local</p>
               </div>
             </div>
-            {openSteps.includes('execucao') ? (
+            {openStep === 'execucao' ? (
               <ChevronUp className="h-4 w-4 text-slate-400 dark:text-slate-500" />
             ) : (
               <ChevronDown className="h-4 w-4 text-slate-400 dark:text-slate-500" />
             )}
           </div>
 
-          {openSteps.includes('execucao') && (
+          {openStep === 'execucao' && (
             <div className="px-5 pb-5 pl-18 space-y-4">
               <ol className="space-y-2.5 list-decimal list-inside text-xs text-slate-500 dark:text-slate-400 font-bold leading-relaxed">
                 <li>Conecte o seu celular físico Android no cabo USB do computador.</li>

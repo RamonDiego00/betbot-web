@@ -20,6 +20,9 @@
   --border: #334155; /* slate-700 */
 }
 
+/* Cor de marca — verde #226350, escala 50-950 gerada a partir dele (mesma
+   posição de "600" que o tom original ocupa), pra substituir o indigo usado
+   em todo o app sem perder as relações de contraste já ajustadas por página. */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -27,6 +30,18 @@
   --color-card-foreground: var(--card-foreground);
   --color-border: var(--border);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-50: #f0faf7;
+  --color-brand-100: #ddf3ed;
+  --color-brand-200: #bbe8da;
+  --color-brand-300: #8dd8c2;
+  --color-brand-400: #58c6a6;
+  --color-brand-500: #39a787;
+  --color-brand-600: #226350;
+  --color-brand-700: #1b5040;
+  --color-brand-800: #164134;
+  --color-brand-900: #12352b;
+  --color-brand-950: #0a1e19;
 }
 
 body {

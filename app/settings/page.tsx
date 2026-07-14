@@ -11,6 +11,8 @@ import {
 import { cn } from '@/lib/utils';
 import { authUtils } from '@/lib/auth';
 import { userService, UserProfile } from '@/lib/api/services/user';
+import { automationService } from '@/lib/api/services/automation';
+import { AutomationDeviceStatus } from '@/types/api';
 
 const THEME_KEY = 'betbot_theme';
 
@@ -23,13 +25,19 @@ export default function Settings() {
   });
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [deviceStatus, setDeviceStatus] = useState<AutomationDeviceStatus | null>(null);
 
   useEffect(() => {
     userService.getMe()
       .then(setProfile)
       .catch((error) => console.error('Erro ao carregar perfil:', error))
       .finally(() => setProfileLoading(false));
+    automationService.getDeviceStatus()
+      .then(setDeviceStatus)
+      .catch((error) => console.error('Erro ao carregar status do device:', error));
   }, []);
+
+  const isDeviceConnected = deviceStatus?.status === 'connected';
 
   const toggleDarkMode = () => {
     setIsDarkMode((prev) => {
@@ -61,7 +69,7 @@ export default function Settings() {
             </div>
           ) : (
             <>
-              <div className="h-16 w-16 bg-indigo-600 rounded-full flex items-center justify-center text-white font-black text-2xl shadow-inner">
+              <div className="h-16 w-16 bg-brand-600 rounded-full flex items-center justify-center text-white font-black text-2xl shadow-inner">
                 {avatarInitial}
               </div>
               <div>
@@ -104,8 +112,8 @@ export default function Settings() {
               aria-label="Alternar modo escuro"
               onClick={toggleDarkMode}
               className={cn(
-                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900",
-                isDarkMode ? "bg-indigo-600" : "bg-slate-200"
+                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900",
+                isDarkMode ? "bg-brand-600" : "bg-slate-200"
               )}
             >
               <span className={cn(
@@ -123,21 +131,34 @@ export default function Settings() {
           Integração & Automação
         </h3>
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
-          {/*
-            Estado honesto: hoje não há registro de dispositivos no portal.
-            Quando o agente local (fase posterior do plano) estiver configurado,
-            o dispositivo conectado do usuário passa a aparecer aqui.
-          */}
-          <div className="p-8 flex flex-col items-center justify-center text-center gap-3">
-            <div className="h-12 w-12 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center">
-              <Smartphone className="h-6 w-6 text-slate-400 dark:text-slate-500" />
+          {isDeviceConnected ? (
+            <div className="p-6 flex items-center gap-4">
+              <div className="h-12 w-12 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl flex items-center justify-center shrink-0">
+                <Smartphone className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{deviceStatus?.model || 'Dispositivo Android'}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                  Conectado · {deviceStatus?.batteryLevel != null ? `${deviceStatus.batteryLevel}% de bateria · ` : ''}{deviceStatus?.uptime || 'Ativo'}
+                </p>
+              </div>
+              <span className="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase rounded-full border border-emerald-100 dark:border-emerald-500/20">
+                <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full" />
+                Online
+              </span>
             </div>
-            <p className="text-sm font-bold text-slate-900 dark:text-slate-100">Nenhum dispositivo conectado</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 font-medium max-w-sm leading-relaxed">
-              Quando o agente local estiver configurado na máquina onde o worker roda,
-              o dispositivo Android conectado aparecerá aqui automaticamente.
-            </p>
-          </div>
+          ) : (
+            <div className="p-8 flex flex-col items-center justify-center text-center gap-3">
+              <div className="h-12 w-12 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center">
+                <Smartphone className="h-6 w-6 text-slate-400 dark:text-slate-500" />
+              </div>
+              <p className="text-sm font-bold text-slate-900 dark:text-slate-100">Nenhum dispositivo conectado</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 font-medium max-w-sm leading-relaxed">
+                Quando o agente local estiver configurado na máquina onde o worker roda,
+                o dispositivo Android conectado aparecerá aqui automaticamente.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

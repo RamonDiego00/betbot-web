@@ -156,7 +156,7 @@ export default function Financeiro() {
       label: 'Saldo Total',
       value: `R$ ${(summary.totalBalance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: Wallet,
-      color: 'text-indigo-600 dark:text-indigo-400',
+      color: 'text-brand-600 dark:text-brand-400',
       bg: 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800',
     },
     {
@@ -202,7 +202,7 @@ export default function Financeiro() {
                 <card.icon className={cn("h-6 w-6", card.color)} />
               </div>
               <div>
-                <p className="text-[10px] font-black text-slate-400 dark:text-slate-550 uppercase tracking-widest">{card.label}</p>
+                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{card.label}</p>
                 <h4 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{card.value}</h4>
               </div>
             </div>
@@ -223,7 +223,7 @@ export default function Financeiro() {
                   <div
                     className={cn(
                       "w-full rounded-t hover:opacity-80 transition-all cursor-help relative group",
-                      data.valor >= 0 ? "bg-indigo-500 hover:bg-indigo-600" : "bg-rose-400 hover:bg-rose-500"
+                      data.valor >= 0 ? "bg-brand-500 hover:bg-brand-600" : "bg-rose-400 hover:bg-rose-500"
                     )}
                     style={{ height: `${(Math.abs(data.valor) / maxLucro) * 100}%`, minHeight: '4px' }}
                   >
@@ -245,8 +245,8 @@ export default function Financeiro() {
           <div className="flex items-center justify-between px-1">
             <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest">Saldos por Casa</h3>
             <div className="flex items-center gap-3">
-              <button className="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"><Search className="h-4 w-4" /></button>
-              <button className="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"><Filter className="h-4 w-4" /></button>
+              <button className="text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"><Search className="h-4 w-4" /></button>
+              <button className="text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"><Filter className="h-4 w-4" /></button>
             </div>
           </div>
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
@@ -276,8 +276,8 @@ export default function Financeiro() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end items-center gap-1.5">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-450" />
-                          <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-450 uppercase tracking-tighter">{s.statusSincronizacao}</span>
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-tighter">{s.statusSincronizacao}</span>
                         </div>
                       </td>
                     </tr>
@@ -295,8 +295,8 @@ export default function Financeiro() {
             {repasseDoMes != null ? (
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <Percent className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-450">{currentMonthLabel}</span>
+                  <Percent className="h-4 w-4 text-brand-600 dark:text-brand-400" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-brand-600 dark:text-brand-400">{currentMonthLabel}</span>
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Lucro Declarado</p>
@@ -306,7 +306,7 @@ export default function Financeiro() {
                 </div>
                 <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
                   <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Valor do Repasse</p>
-                  <p className="text-3xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight">
+                  <p className="text-3xl font-black text-brand-600 dark:text-brand-400 tracking-tight">
                     R$ {repasseDoMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
@@ -341,7 +341,7 @@ export default function Financeiro() {
                 type="month"
                 value={uploadPeriod}
                 onChange={(e) => setUploadPeriod(e.target.value)}
-                className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
             <div>
@@ -352,7 +352,7 @@ export default function Financeiro() {
                 placeholder="R$ 0,00"
                 value={uploadProfit}
                 onChange={(e) => setUploadProfit(e.target.value)}
-                className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
             <div>
@@ -367,7 +367,7 @@ export default function Financeiro() {
             <button
               onClick={handleUploadComprovante}
               disabled={uploading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm"
             >
               {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
               Enviar
@@ -410,7 +410,7 @@ export default function Financeiro() {
                         <button
                           onClick={() => handleOpenComprovante(c.id)}
                           disabled={openingId === c.id}
-                          className="inline-flex items-center gap-1.5 text-[10px] font-black text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 uppercase tracking-tighter disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 text-[10px] font-black text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 uppercase tracking-tighter disabled:opacity-50"
                         >
                           <FileText className="h-3.5 w-3.5" />
                           {openingId === c.id ? 'Abrindo...' : c.fileName}
@@ -429,7 +429,7 @@ export default function Financeiro() {
       {isAdmin && (
         <div className="space-y-4">
           <div className="flex items-center gap-2 px-1">
-            <ShieldCheck className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+            <ShieldCheck className="h-4 w-4 text-brand-600 dark:text-brand-400" />
             <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest">Cobrança — Todos os Usuários</h3>
           </div>
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
@@ -466,7 +466,7 @@ export default function Financeiro() {
                         <button
                           onClick={() => handleOpenComprovante(c.id)}
                           disabled={openingId === c.id}
-                          className="inline-flex items-center gap-1.5 text-[10px] font-black text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 uppercase tracking-tighter disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 text-[10px] font-black text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 uppercase tracking-tighter disabled:opacity-50"
                         >
                           <FileText className="h-3.5 w-3.5" />
                           {openingId === c.id ? 'Abrindo...' : c.fileName}
@@ -475,13 +475,13 @@ export default function Financeiro() {
                       <td className="px-6 py-4">
                         {c.userStatus === 'ACTIVE' ? (
                           <div className="flex items-center gap-1.5">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-450" />
-                            <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-455 uppercase tracking-tighter">Ativo</span>
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-500 uppercase tracking-tighter">Ativo</span>
                           </div>
                         ) : (
                           <div className="flex items-center gap-1.5">
-                            <Ban className="h-3.5 w-3.5 text-rose-600 dark:text-rose-450" />
-                            <span className="text-[10px] font-black text-rose-700 dark:text-rose-455 uppercase tracking-tighter">Bloqueado</span>
+                            <Ban className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+                            <span className="text-[10px] font-black text-rose-700 dark:text-rose-500 uppercase tracking-tighter">Bloqueado</span>
                           </div>
                         )}
                       </td>
@@ -492,8 +492,8 @@ export default function Financeiro() {
                           className={cn(
                             "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-50",
                             c.userStatus === 'ACTIVE'
-                              ? "bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-450 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/50"
-                              : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-450 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50"
+                              ? "bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/50"
+                              : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50"
                           )}
                         >
                           {updatingUserId === c.userId

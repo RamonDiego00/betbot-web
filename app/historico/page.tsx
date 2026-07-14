@@ -25,7 +25,7 @@ import { Ticket, DashboardSummary } from '@/types/api';
 // --- COMPONENTES AUXILIARES ---
 
 const StatCard = ({ label, value, icon: Icon, color, bg }: { label: string; value: string; icon: React.ElementType; color: string; bg: string }) => (
-  <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-4 shadow-sm hover:border-indigo-400 dark:hover:border-indigo-500 transition-colors group">
+  <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-4 shadow-sm hover:border-brand-400 dark:hover:border-brand-500 transition-colors group">
     <div className={cn("p-3 rounded-lg", bg)}>
       <Icon className={cn("h-6 w-6", color)} />
     </div>
@@ -73,10 +73,10 @@ export default function Historico() {
     : 0;
 
   const performanceStats = summary ? [
-    { label: 'Total de Bets', value: totalItems.toLocaleString(), icon: Activity, color: 'text-indigo-600 dark:text-indigo-455', bg: 'bg-indigo-50 dark:bg-indigo-950/20' },
-    { label: 'Win Rate', value: `${winRate}%`, icon: Target, color: 'text-emerald-700 dark:text-emerald-455', bg: 'bg-emerald-50 dark:bg-emerald-950/20' },
-    { label: 'ROI Geral', value: `${summary.overallRoi}%`, icon: BarChart, color: 'text-emerald-700 dark:text-emerald-455', bg: 'bg-emerald-50 dark:bg-emerald-950/20' },
-    { label: 'Lucro Total', value: `R$ ${summary.monthlyProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Trophy, color: 'text-amber-500 dark:text-amber-455', bg: 'bg-amber-50 dark:bg-amber-950/20' },
+    { label: 'Total de Bets', value: totalItems.toLocaleString(), icon: Activity, color: 'text-brand-600 dark:text-brand-400', bg: 'bg-brand-50 dark:bg-brand-950/20' },
+    { label: 'Win Rate', value: `${winRate}%`, icon: Target, color: 'text-emerald-700 dark:text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950/20' },
+    { label: 'ROI Geral', value: `${summary.overallRoi}%`, icon: BarChart, color: 'text-emerald-700 dark:text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950/20' },
+    { label: 'Lucro Total', value: `R$ ${summary.monthlyProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Trophy, color: 'text-amber-500 dark:text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/20' },
   ] : [];
 
   const filteredTickets = tickets.filter((ticket) =>
@@ -98,7 +98,7 @@ export default function Historico() {
             <input
               type="text"
               placeholder="Buscar por mercado/seleção..."
-              className="pl-9 pr-4 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all w-full md:w-64 text-slate-900 dark:text-slate-100"
+              className="pl-9 pr-4 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all w-full md:w-64 text-slate-900 dark:text-slate-100"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -126,8 +126,8 @@ export default function Historico() {
             <span className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest">Histórico Geral</span>
           </div>
           <div className="flex gap-4 text-[10px] font-black uppercase tracking-wider">
-            <span className="text-emerald-700 dark:text-emerald-450">Greens: {tickets.filter((t) => t.result === 'WIN').length}</span>
-            <span className="text-rose-700 dark:text-rose-455">Reds: {tickets.filter((t) => t.result === 'LOSS').length}</span>
+            <span className="text-emerald-700 dark:text-emerald-400">Greens: {tickets.filter((t) => t.result === 'WIN').length}</span>
+            <span className="text-rose-700 dark:text-rose-500">Reds: {tickets.filter((t) => t.result === 'LOSS').length}</span>
           </div>
         </div>
 
@@ -173,8 +173,8 @@ export default function Historico() {
                           "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm",
                           bet.result === 'WIN' ? "text-emerald-700 dark:text-emerald-400" :
                           bet.result === 'LOSS' ? "text-rose-700 dark:text-rose-400" :
-                          bet.result === 'VOID' ? "text-slate-500 dark:text-slate-450" :
-                          "text-amber-600 dark:text-amber-450"
+                          bet.result === 'VOID' ? "text-slate-500 dark:text-slate-400" :
+                          "text-amber-600 dark:text-amber-400"
                         )}>
                           {bet.result === 'WIN' ? <ArrowUpRight className="h-3 w-3" /> :
                            bet.result === 'LOSS' ? <ArrowDownRight className="h-3 w-3" /> :
@@ -187,8 +187,8 @@ export default function Historico() {
                       </td>
                       <td className={cn(
                         "px-6 py-4 text-right text-xs font-black",
-                        bet.result === 'WIN' ? "text-emerald-700 dark:text-emerald-450" :
-                        bet.result === 'LOSS' ? "text-rose-700 dark:text-rose-450" : "text-slate-400 dark:text-slate-500"
+                        bet.result === 'WIN' ? "text-emerald-700 dark:text-emerald-400" :
+                        bet.result === 'LOSS' ? "text-rose-700 dark:text-rose-400" : "text-slate-400 dark:text-slate-500"
                       )}>
                         {bet.result === 'WIN' ? '+' : ''}R$ {bet.profit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </td>
@@ -208,7 +208,7 @@ export default function Historico() {
               <button
                 onClick={() => fetchTickets(currentPage - 1)}
                 disabled={currentPage === 0 || loading}
-                className="px-3 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-[10px] font-black uppercase text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                className="px-3 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-[10px] font-black uppercase text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
               >
                 <ChevronLeft className="h-3 w-3" /> Anterior
               </button>
@@ -218,7 +218,7 @@ export default function Historico() {
               <button
                 onClick={() => fetchTickets(currentPage + 1)}
                 disabled={currentPage >= totalPages - 1 || loading}
-                className="px-3 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-[10px] font-black uppercase text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                className="px-3 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-[10px] font-black uppercase text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
               >
                 Próxima <ChevronRight className="h-3 w-3" />
               </button>

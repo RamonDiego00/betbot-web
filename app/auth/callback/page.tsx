@@ -22,7 +22,7 @@ function AuthCallbackInner() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-50">
-      <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
+      <Loader2 className="h-10 w-10 animate-spin text-brand-600" />
       <p className="text-slate-500 font-medium animate-pulse">Finalizando autenticação...</p>
     </div>
   );
@@ -33,7 +33,7 @@ export default function AuthCallback() {
     <Suspense
       fallback={
         <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-50">
-          <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
+          <Loader2 className="h-10 w-10 animate-spin text-brand-600" />
         </div>
       }
     >
