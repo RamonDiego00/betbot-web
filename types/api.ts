@@ -232,27 +232,6 @@ export interface CreateTicketPayload {
   type: string; // GOALS, CORNERS, BTTS, etc.
 }
 
-// --- Estratégia & Analytics ---
-
-// Shape real de GET /api/v1/analytics/markets (MarketStatsDTO)
-export interface MarketStatsRaw {
-  market: string;
-  roi: number;
-  lucroTotal: number;
-  winRate: number;
-  quantidadeApostas: number;
-}
-
-// Tipo normalizado para consumo na página de analytics
-export interface StrategyPerformance {
-  strategyName: string;
-  totalBets: number;
-  profit: number;
-  roi: number;
-  ranking: number;
-  winRate: number;
-}
-
 // --- Billing (comprovante de lucro mensal) ---
 
 // Shape real de GET /api/v1/billing/statements (comprovantes do usuário logado)

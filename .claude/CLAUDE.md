@@ -27,7 +27,6 @@ app/
   automacao/page.tsx    # Status do worker Maestro + fila de comandos
   historico/page.tsx    # Histórico de apostas (tabela com filtro)
   financeiro/page.tsx   # Finanças, gráfico mensal, metas
-  analytics/page.tsx    # Performance por estratégia + insights
   settings/page.tsx     # Preferências, integração Maestro, logout
 
 components/
@@ -43,7 +42,6 @@ lib/
       dashboard.ts      # GET /api/v1/dashboard/{summary,bankrolls,games}
       automation.ts     # GET /api/v1/automation/machines + /api/v1/bets/daily-generation
       ticket.ts         # GET/POST /api/v1/tickets/history
-      report.ts         # GET /api/v1/reports/strategy-performance
 
 types/
   api.ts                # Todas as interfaces TypeScript dos DTOs do backend
@@ -112,12 +110,6 @@ Gestão financeira:
 - Tabela de bankroll por plataforma
 - Círculos de progresso: meta de lucro e limite de perda
 
-### `/analytics` — Analytics
-Performance das estratégias:
-- ROI e win rate por estratégia (barras de progresso)
-- Ranking das top 5 estratégias
-- Insights gerados para feedback do engine de apostas
-
 ### `/settings` — Configurações
 - Perfil do usuário (vem do token/API)
 - Toggles de interface (dark mode, notificações)
@@ -151,7 +143,6 @@ POST /api/v1/auth/debug-login               → Login de desenvolvimento
 | Automação | ✅ Completo (logs Maestro são mock) |
 | Histórico | ✅ Completo |
 | Financeiro | ✅ Completo (gráfico mensal com dados hardcoded) |
-| Analytics | ✅ Completo |
 | Settings | ✅ Completo |
 
 ---

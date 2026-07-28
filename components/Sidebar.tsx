@@ -8,7 +8,6 @@ import {
   Wallet,
   History,
   Cpu,
-  BarChart3,
   Settings,
   LogOut,
   Circle,
@@ -32,7 +31,6 @@ const NAV_ITEMS = [
   { label: 'Financeiro', href: '/financeiro', icon: Wallet },
   { label: 'Histórico', href: '/historico', icon: History },
   { label: 'Automação', href: '/automacao', icon: Cpu },
-  { label: 'Analytics', href: '/analytics', icon: BarChart3 },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ serverStatus = 'online', isOpen, onClose, onToggle }) => {
