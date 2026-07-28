@@ -40,7 +40,33 @@ export default function RootLayout({
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []);
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const isAuthPage = AUTH_PAGES.includes(pathname);
+
+  // Fecha o drawer sempre que a rota muda
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSidebarOpen(false);
+  }, [pathname]);
+
+  // Trava o scroll do body enquanto o drawer estiver aberto
+  useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [sidebarOpen]);
+
+  // Fecha o drawer com a tecla Escape
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSidebarOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [sidebarOpen]);
 
   // Redireciona após montagem (sem setState dentro do efeito)
   useEffect(() => {
@@ -73,11 +99,18 @@ export default function RootLayout({
     <html lang="pt-BR" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100">
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-        <Toaster position="top-right" richColors />
+        <Toaster position="top-right" richColors mobileOffset={{ top: "4.5rem" }} />
         <div className="flex">
-          {!isAuthPage && <Sidebar serverStatus="online" />}
+          {!isAuthPage && (
+            <Sidebar
+              serverStatus="online"
+              isOpen={sidebarOpen}
+              onClose={() => setSidebarOpen(false)}
+              onToggle={() => setSidebarOpen((o) => !o)}
+            />
+          )}
 
-          <main className={isAuthPage ? "flex-1 min-h-screen" : "flex-1 ml-64 min-h-screen p-8"}>
+          <main className={isAuthPage ? "flex-1 min-h-screen" : "flex-1 min-h-screen pt-16 px-4 pb-6 sm:px-6 lg:pt-8 lg:px-8 lg:pb-8 lg:ml-64"}>
             <div className={isAuthPage ? "" : "max-w-7xl mx-auto"}>
               {children}
             </div>

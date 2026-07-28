@@ -335,7 +335,7 @@ export default function Automacao() {
             Controlando Server Local via Maestro Flow
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full md:w-auto">
           <div className="flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 shadow-sm">
             <span className={cn(
               "text-[10px] font-black uppercase tracking-wider",
@@ -371,9 +371,9 @@ export default function Automacao() {
               type="button"
               onClick={handleTogglePause}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider text-white transition-all shadow-sm",
-                isPaused 
-                  ? "bg-emerald-600 hover:bg-emerald-700" 
+                "w-full sm:w-auto justify-center flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider text-white transition-all shadow-sm",
+                isPaused
+                  ? "bg-emerald-600 hover:bg-emerald-700"
                   : "bg-brand-600 hover:bg-brand-700"
               )}
             >
@@ -549,7 +549,7 @@ export default function Automacao() {
               </div>
             )}
 
-            <div className="bg-slate-900 dark:bg-slate-950 rounded-xl border border-slate-800 dark:border-slate-800 p-6 shadow-xl min-h-[300px] font-mono text-sm relative">
+            <div className="bg-slate-900 dark:bg-slate-950 rounded-xl border border-slate-800 dark:border-slate-800 p-4 sm:p-6 shadow-xl min-h-[300px] font-mono text-sm relative">
             <div className="flex items-center gap-2 mb-6 border-b border-slate-800 dark:border-slate-800 pb-4">
               <div className="h-3 w-3 rounded-full bg-rose-500" />
               <div className="h-3 w-3 rounded-full bg-amber-500" />
@@ -561,13 +561,13 @@ export default function Automacao() {
               {logs.length === 0 ? (
                 <div className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">Aguardando logs...</div>
               ) : logs.map((log) => (
-                <div key={log.id} className="flex gap-4 group">
+                <div key={log.id} className="flex flex-wrap gap-x-3 gap-y-1 group">
                   <span className="text-slate-600 shrink-0 font-bold">[{log.time}]</span>
-                  <span className={cn("font-black uppercase tracking-tighter shrink-0 min-w-[60px]", logLevelColor(log.level))}>
+                  <span className={cn("font-black uppercase tracking-tighter shrink-0 min-w-[52px] sm:min-w-[60px]", logLevelColor(log.level))}>
                     {log.level}
                   </span>
                   <span className={cn(
-                    "group-hover:text-slate-100 transition-colors",
+                    "break-words group-hover:text-slate-100 transition-colors",
                     log.level === 'ERROR' ? "text-rose-200" : "text-slate-300 dark:text-slate-400"
                   )}>
                     {log.message}

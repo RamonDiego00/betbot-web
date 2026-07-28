@@ -72,11 +72,11 @@ export default function Settings() {
               <div className="h-16 w-16 bg-brand-600 rounded-full flex items-center justify-center text-white font-black text-2xl shadow-inner">
                 {avatarInitial}
               </div>
-              <div>
+              <div className="min-w-0">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 leading-tight">
                   {profile?.name || 'Usuário'}
                 </h3>
-                <p className="text-sm text-slate-400 dark:text-slate-500 font-medium">{profile?.email || '—'}</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500 font-medium truncate">{profile?.email || '—'}</p>
                 {profile?.status && (
                   <span className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase rounded-full border border-emerald-100 dark:border-emerald-500/20">
                     {profile.status}
@@ -132,7 +132,7 @@ export default function Settings() {
         </h3>
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
           {isDeviceConnected ? (
-            <div className="p-6 flex items-center gap-4">
+            <div className="p-6 flex flex-wrap items-center gap-4 gap-y-2">
               <div className="h-12 w-12 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl flex items-center justify-center shrink-0">
                 <Smartphone className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
               </div>

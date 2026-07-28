@@ -171,7 +171,7 @@ export default function Dashboard() {
                     <div className="divide-y divide-slate-100 dark:divide-slate-800">
                       {leagueInfo.matches.map((match) => (
                         <div key={match.match_id} className="flex items-center py-3.5 px-4 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors cursor-pointer group">
-                          <div className="w-14 flex flex-col items-start justify-center font-black">
+                          <div className="w-14 shrink-0 flex flex-col items-start justify-center font-black">
                             {match.status === '1H' || match.status === '2H' || match.status === 'HT' ? (
                               <span className="text-[10px] text-rose-600 animate-pulse">AO VIVO ({match.status})</span>
                             ) : (
@@ -180,22 +180,22 @@ export default function Dashboard() {
                               </span>
                             )}
                           </div>
-                          <div className="flex-1 flex items-center justify-center gap-6 px-4">
-                            <div className="flex items-center justify-end gap-3 flex-1">
-                              <span className="text-xs font-bold text-slate-900 dark:text-slate-100 text-right">{match.home}</span>
+                          <div className="flex-1 min-w-0 flex items-center justify-center gap-2 sm:gap-6 px-4">
+                            <div className="min-w-0 flex items-center justify-end gap-1.5 sm:gap-3 flex-1">
+                              <span className="text-xs font-bold text-slate-900 dark:text-slate-100 text-right truncate">{match.home}</span>
                               <TeamLogo name={match.home} />
                             </div>
-                            <div className="flex items-center gap-2 min-w-[50px] justify-center bg-slate-900 dark:bg-slate-950 px-2 py-1 rounded border border-slate-800 dark:border-slate-700 text-white shadow-sm">
+                            <div className="shrink-0 flex items-center gap-2 min-w-[50px] justify-center bg-slate-900 dark:bg-slate-950 px-2 py-1 rounded border border-slate-800 dark:border-slate-700 text-white shadow-sm">
                               <span className="text-xs font-black">{match.homeScore ?? '-'}</span>
                               <span className="text-slate-500 text-[10px] font-black">x</span>
                               <span className="text-xs font-black">{match.awayScore ?? '-'}</span>
                             </div>
-                            <div className="flex items-center justify-start gap-3 flex-1">
+                            <div className="min-w-0 flex items-center justify-start gap-1.5 sm:gap-3 flex-1">
                               <TeamLogo name={match.away} />
-                              <span className="text-xs font-bold text-slate-900 dark:text-slate-100 text-left">{match.away}</span>
+                              <span className="text-xs font-bold text-slate-900 dark:text-slate-100 text-left truncate">{match.away}</span>
                             </div>
                           </div>
-                          <div className="w-6 flex justify-end"><Star className="h-3 w-3 text-slate-200 dark:text-slate-700 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors" /></div>
+                          <div className="w-6 shrink-0 flex justify-end"><Star className="h-3 w-3 text-slate-200 dark:text-slate-700 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors" /></div>
                         </div>
                       ))}
                     </div>

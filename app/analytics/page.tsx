@@ -98,10 +98,10 @@ export default function Analytics() {
         ) : (
           <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {performances.map((stat) => (
-              <li key={stat.strategyName} className="flex items-center justify-between px-6 py-3.5 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+              <li key={stat.strategyName} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 px-6 py-3.5 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                 <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{stat.strategyName}</span>
-                <div className="flex items-center gap-6">
-                  <span className="text-xs font-medium text-slate-400 dark:text-slate-500 hidden sm:inline">
+                <div className="flex flex-wrap items-center gap-6">
+                  <span className="text-xs font-medium text-slate-400 dark:text-slate-500">
                     {stat.totalBets} apostas
                   </span>
                   <span className="text-xs font-black text-slate-500 dark:text-slate-400 min-w-[52px] text-right">

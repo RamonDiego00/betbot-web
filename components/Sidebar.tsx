@@ -12,13 +12,18 @@ import {
   Settings,
   LogOut,
   Circle,
-  Rocket
+  Rocket,
+  Menu,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { authUtils } from '@/lib/auth';
 
 interface SidebarProps {
   serverStatus?: 'online' | 'offline';
+  isOpen: boolean;
+  onClose: () => void;
+  onToggle: () => void;
 }
 
 const NAV_ITEMS = [
@@ -30,7 +35,7 @@ const NAV_ITEMS = [
   { label: 'Analytics', href: '/analytics', icon: BarChart3 },
 ];
 
-export const Sidebar: React.FC<SidebarProps> = ({ serverStatus = 'online' }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ serverStatus = 'online', isOpen, onClose, onToggle }) => {
   const pathname = usePathname();
 
   const isRouteActive = (href: string) => {
@@ -39,7 +44,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ serverStatus = 'online' }) => 
   };
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col transition-all duration-300 z-50">
+    <>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-label={isOpen ? 'Fechar menu' : 'Abrir menu'}
+        aria-expanded={isOpen}
+        className="fixed top-3 left-3 z-[60] h-10 w-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm lg:hidden"
+      >
+        {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      </button>
+
+      {isOpen && (
+        <div
+          onClick={onClose}
+          aria-hidden="true"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+        />
+      )}
+
+      <aside className={cn(
+        "fixed left-0 top-0 h-screen w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col z-50",
+        "transform transition-transform duration-300 ease-in-out lg:translate-x-0",
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
       {/* Header com Logo e Status */}
       <div className="p-6 flex flex-col gap-5">
         <div className="flex items-center gap-3">
@@ -76,6 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ serverStatus = 'online' }) => 
             <Link
               key={item.href}
               href={item.href}
+              onClick={onClose}
               className={cn(
                 "group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all border border-transparent",
                 isActive 
@@ -97,6 +126,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ serverStatus = 'online' }) => 
       <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-1">
         <Link
           href="/settings"
+          onClick={onClose}
           className={cn(
             "group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all border border-transparent",
             isRouteActive('/settings')
@@ -118,7 +148,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ serverStatus = 'online' }) => 
           Sair
         </button>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 };
 

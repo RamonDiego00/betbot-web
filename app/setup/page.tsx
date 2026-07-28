@@ -38,14 +38,14 @@ const CommandBlock = ({ command }: CommandBlockProps) => {
   };
 
   return (
-    <div className="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 my-2">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 my-2">
       <pre className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-all select-all">{command}</pre>
       <button
         type="button"
         onClick={handleCopy}
         aria-label="Copiar comando"
         className={cn(
-          "shrink-0 h-8 w-8 flex items-center justify-center rounded-lg border transition-all duration-200",
+          "self-end sm:self-auto shrink-0 h-8 w-8 flex items-center justify-center rounded-lg border transition-all duration-200",
           copied
             ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400"
             : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-700 dark:hover:text-slate-200"
@@ -201,7 +201,7 @@ export default function Setup() {
           </div>
 
           {openStep === 'token' && (
-            <div className="px-5 pb-5 pl-18 space-y-3.5">
+            <div className="px-5 pb-5 pl-5 sm:pl-18 space-y-3.5">
               <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 leading-relaxed">
                 <p className="mb-2">
                   <strong className="text-slate-900 dark:text-slate-300">O que é este Token?</strong>
@@ -253,7 +253,7 @@ export default function Setup() {
           </div>
 
           {openStep === 'instalacao' && (
-            <div className="px-5 pb-5 pl-18 space-y-4">
+            <div className="px-5 pb-5 pl-5 sm:pl-18 space-y-4">
               {/* Seletor de abas OS */}
               <div className="flex gap-2 border-b border-slate-100 dark:border-slate-800 pb-1.5">
                 <button
@@ -369,7 +369,7 @@ export default function Setup() {
           </div>
 
           {openStep === 'credenciais' && (
-            <div className="px-5 pb-5 pl-18 space-y-3">
+            <div className="px-5 pb-5 pl-5 sm:pl-18 space-y-3">
               <p className="text-xs text-slate-500 dark:text-slate-400 font-bold leading-relaxed">
                 Crie um arquivo chamado <code className="font-mono bg-slate-100 dark:bg-slate-800 text-xs px-1.5 py-0.5 rounded text-slate-900 dark:text-slate-100">.env</code> na mesma pasta do agente e configure seu acesso:
               </p>
@@ -411,7 +411,7 @@ export default function Setup() {
           </div>
 
           {openStep === 'execucao' && (
-            <div className="px-5 pb-5 pl-18 space-y-4">
+            <div className="px-5 pb-5 pl-5 sm:pl-18 space-y-4">
               <ol className="space-y-2.5 list-decimal list-inside text-xs text-slate-500 dark:text-slate-400 font-bold leading-relaxed">
                 <li>Conecte o seu celular físico Android no cabo USB do computador.</li>
                 <li>Ative a Depuração USB e aceite o prompt de permissão RSA na tela do celular.</li>

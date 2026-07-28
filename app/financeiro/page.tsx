@@ -141,6 +141,8 @@ export default function Financeiro() {
     }
   };
 
+  const [activeBarIdx, setActiveBarIdx] = useState<number | null>(null);
+
   const maxLucro = lucroMensal.length > 0 ? Math.max(...lucroMensal.map((d) => Math.abs(d.valor)), 1) : 1;
 
   // Repasse da plataforma: 20% do lucro declarado no comprovante do mês corrente
@@ -221,13 +223,25 @@ export default function Financeiro() {
               {lucroMensal.map((data, idx) => (
                 <div key={idx} className="flex-1 flex flex-col items-center gap-3">
                   <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setActiveBarIdx((prev) => (prev === idx ? null : idx))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setActiveBarIdx((prev) => (prev === idx ? null : idx));
+                      }
+                    }}
                     className={cn(
-                      "w-full rounded-t hover:opacity-80 transition-all cursor-help relative group",
+                      "w-full rounded-t hover:opacity-80 transition-all cursor-pointer relative group",
                       data.valor >= 0 ? "bg-brand-500 hover:bg-brand-600" : "bg-rose-400 hover:bg-rose-500"
                     )}
                     style={{ height: `${(Math.abs(data.valor) / maxLucro) * 100}%`, minHeight: '4px' }}
                   >
-                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-slate-950 text-white text-[10px] font-black py-1.5 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 uppercase tracking-tighter">
+                    <div className={cn(
+                      "absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-slate-950 text-white text-[10px] font-black py-1.5 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 uppercase tracking-tighter",
+                      activeBarIdx === idx && "opacity-100"
+                    )}>
                       R$ {data.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
@@ -250,40 +264,62 @@ export default function Financeiro() {
             </div>
           </div>
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-slate-50/50 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800">
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Plataforma</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Moeda</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Saldo</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {saldos.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-8 text-center text-xs text-slate-500 dark:text-slate-400 italic">Nenhum saldo encontrado.</td>
+            <div className="hidden md:block">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-slate-50/50 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800">
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Plataforma</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Moeda</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Saldo</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Status</th>
                     </tr>
-                  ) : saldos.map((s, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group cursor-default">
-                      <td className="px-6 py-4">
-                        <span className="text-xs font-black uppercase text-slate-700 dark:text-slate-300">{s.casa}</span>
-                      </td>
-                      <td className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">BRL</td>
-                      <td className="px-6 py-4 text-xs font-black text-slate-900 dark:text-slate-100">
-                        {s.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end items-center gap-1.5">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                          <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-tighter">{s.statusSincronizacao}</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {saldos.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-8 text-center text-xs text-slate-500 dark:text-slate-400 italic">Nenhum saldo encontrado.</td>
+                      </tr>
+                    ) : saldos.map((s, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group cursor-default">
+                        <td className="px-6 py-4">
+                          <span className="text-xs font-black uppercase text-slate-700 dark:text-slate-300">{s.casa}</span>
+                        </td>
+                        <td className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">BRL</td>
+                        <td className="px-6 py-4 text-xs font-black text-slate-900 dark:text-slate-100">
+                          {s.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end items-center gap-1.5">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-tighter">{s.statusSincronizacao}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+              {saldos.length === 0 ? (
+                <div className="px-6 py-8 text-center text-xs text-slate-500 dark:text-slate-400 italic">Nenhum saldo encontrado.</div>
+              ) : saldos.map((s, idx) => (
+                <div key={idx} className="px-4 py-4 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-black uppercase text-slate-700 dark:text-slate-300 truncate">{s.casa}</span>
+                    <div className="shrink-0 flex items-center gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-tighter">{s.statusSincronizacao}</span>
+                    </div>
+                  </div>
+                  <div className="text-xs font-black text-slate-900 dark:text-slate-100">
+                    {s.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}{' '}
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">BRL</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -378,48 +414,80 @@ export default function Financeiro() {
         <div className="lg:col-span-2 space-y-4">
           <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest px-1">Meus Comprovantes</h3>
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-slate-50/50 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800">
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Período</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Enviado em</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Lucro Declarado</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Arquivo</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {comprovantes.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-8 text-center text-xs text-slate-500 dark:text-slate-400 italic">Nenhum comprovante enviado ainda.</td>
+            <div className="hidden md:block">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-slate-50/50 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800">
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Período</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Enviado em</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Lucro Declarado</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Arquivo</th>
                     </tr>
-                  ) : comprovantes.map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group cursor-default">
-                      <td className="px-6 py-4">
-                        <span className="text-xs font-black uppercase text-slate-700 dark:text-slate-300">{c.period}</span>
-                      </td>
-                      <td className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400">
-                        {new Date(c.uploadedAt).toLocaleDateString('pt-BR')}
-                      </td>
-                      <td className="px-6 py-4 text-xs font-black text-slate-900 dark:text-slate-100">
-                        {c.declaredProfit != null
-                          ? `R$ ${c.declaredProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-                          : '—'}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => handleOpenComprovante(c.id)}
-                          disabled={openingId === c.id}
-                          className="inline-flex items-center gap-1.5 text-[10px] font-black text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 uppercase tracking-tighter disabled:opacity-50"
-                        >
-                          <FileText className="h-3.5 w-3.5" />
-                          {openingId === c.id ? 'Abrindo...' : c.fileName}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {comprovantes.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-8 text-center text-xs text-slate-500 dark:text-slate-400 italic">Nenhum comprovante enviado ainda.</td>
+                      </tr>
+                    ) : comprovantes.map((c) => (
+                      <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group cursor-default">
+                        <td className="px-6 py-4">
+                          <span className="text-xs font-black uppercase text-slate-700 dark:text-slate-300">{c.period}</span>
+                        </td>
+                        <td className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400">
+                          {new Date(c.uploadedAt).toLocaleDateString('pt-BR')}
+                        </td>
+                        <td className="px-6 py-4 text-xs font-black text-slate-900 dark:text-slate-100">
+                          {c.declaredProfit != null
+                            ? `R$ ${c.declaredProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                            : '—'}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={() => handleOpenComprovante(c.id)}
+                            disabled={openingId === c.id}
+                            className="inline-flex items-center gap-1.5 text-[10px] font-black text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 uppercase tracking-tighter disabled:opacity-50"
+                          >
+                            <FileText className="h-3.5 w-3.5" />
+                            {openingId === c.id ? 'Abrindo...' : c.fileName}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+              {comprovantes.length === 0 ? (
+                <div className="px-6 py-8 text-center text-xs text-slate-500 dark:text-slate-400 italic">Nenhum comprovante enviado ainda.</div>
+              ) : comprovantes.map((c) => (
+                <div key={c.id} className="px-4 py-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-black uppercase text-slate-700 dark:text-slate-300">{c.period}</span>
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                      {new Date(c.uploadedAt).toLocaleDateString('pt-BR')}
+                    </span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <span className="text-xs font-black text-slate-900 dark:text-slate-100">
+                      {c.declaredProfit != null
+                        ? `R$ ${c.declaredProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                        : '—'}
+                    </span>
+                    <button
+                      onClick={() => handleOpenComprovante(c.id)}
+                      disabled={openingId === c.id}
+                      className="w-full sm:w-auto justify-center inline-flex items-center gap-1.5 text-[10px] font-black text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 uppercase tracking-tighter disabled:opacity-50"
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      {openingId === c.id ? 'Abrindo...' : c.fileName}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -433,78 +501,136 @@ export default function Financeiro() {
             <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest">Cobrança — Todos os Usuários</h3>
           </div>
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-slate-50/50 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800">
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Usuário</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Período</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Lucro Declarado</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Arquivo</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Status</th>
-                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Ação</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {adminComprovantes.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-xs text-slate-500 dark:text-slate-400 italic">Nenhum comprovante enviado ainda.</td>
+            <div className="hidden md:block">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-slate-50/50 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800">
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Usuário</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Período</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Lucro Declarado</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Arquivo</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Status</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Ação</th>
                     </tr>
-                  ) : adminComprovantes.map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group cursor-default">
-                      <td className="px-6 py-4">
-                        <span className="text-xs font-black text-slate-900 dark:text-slate-100">{c.userName}</span>
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">{c.userEmail}</p>
-                      </td>
-                      <td className="px-6 py-4 text-xs font-black uppercase text-slate-700 dark:text-slate-300">{c.period}</td>
-                      <td className="px-6 py-4 text-xs font-black text-slate-900 dark:text-slate-100">
-                        {c.declaredProfit != null
-                          ? `R$ ${c.declaredProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-                          : '—'}
-                      </td>
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() => handleOpenComprovante(c.id)}
-                          disabled={openingId === c.id}
-                          className="inline-flex items-center gap-1.5 text-[10px] font-black text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 uppercase tracking-tighter disabled:opacity-50"
-                        >
-                          <FileText className="h-3.5 w-3.5" />
-                          {openingId === c.id ? 'Abrindo...' : c.fileName}
-                        </button>
-                      </td>
-                      <td className="px-6 py-4">
-                        {c.userStatus === 'ACTIVE' ? (
-                          <div className="flex items-center gap-1.5">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                            <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-500 uppercase tracking-tighter">Ativo</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1.5">
-                            <Ban className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
-                            <span className="text-[10px] font-black text-rose-700 dark:text-rose-500 uppercase tracking-tighter">Bloqueado</span>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => handleToggleUserStatus(c.userId, c.userStatus)}
-                          disabled={updatingUserId === c.userId}
-                          className={cn(
-                            "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-50",
-                            c.userStatus === 'ACTIVE'
-                              ? "bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/50"
-                              : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50"
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {adminComprovantes.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-8 text-center text-xs text-slate-500 dark:text-slate-400 italic">Nenhum comprovante enviado ainda.</td>
+                      </tr>
+                    ) : adminComprovantes.map((c) => (
+                      <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group cursor-default">
+                        <td className="px-6 py-4">
+                          <span className="text-xs font-black text-slate-900 dark:text-slate-100">{c.userName}</span>
+                          <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">{c.userEmail}</p>
+                        </td>
+                        <td className="px-6 py-4 text-xs font-black uppercase text-slate-700 dark:text-slate-300">{c.period}</td>
+                        <td className="px-6 py-4 text-xs font-black text-slate-900 dark:text-slate-100">
+                          {c.declaredProfit != null
+                            ? `R$ ${c.declaredProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                            : '—'}
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => handleOpenComprovante(c.id)}
+                            disabled={openingId === c.id}
+                            className="inline-flex items-center gap-1.5 text-[10px] font-black text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 uppercase tracking-tighter disabled:opacity-50"
+                          >
+                            <FileText className="h-3.5 w-3.5" />
+                            {openingId === c.id ? 'Abrindo...' : c.fileName}
+                          </button>
+                        </td>
+                        <td className="px-6 py-4">
+                          {c.userStatus === 'ACTIVE' ? (
+                            <div className="flex items-center gap-1.5">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                              <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-500 uppercase tracking-tighter">Ativo</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              <Ban className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+                              <span className="text-[10px] font-black text-rose-700 dark:text-rose-500 uppercase tracking-tighter">Bloqueado</span>
+                            </div>
                           )}
-                        >
-                          {updatingUserId === c.userId
-                            ? '...'
-                            : c.userStatus === 'ACTIVE' ? 'Bloquear' : 'Reativar'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={() => handleToggleUserStatus(c.userId, c.userStatus)}
+                            disabled={updatingUserId === c.userId}
+                            className={cn(
+                              "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-50",
+                              c.userStatus === 'ACTIVE'
+                                ? "bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/50"
+                                : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50"
+                            )}
+                          >
+                            {updatingUserId === c.userId
+                              ? '...'
+                              : c.userStatus === 'ACTIVE' ? 'Bloquear' : 'Reativar'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+              {adminComprovantes.length === 0 ? (
+                <div className="px-6 py-8 text-center text-xs text-slate-500 dark:text-slate-400 italic">Nenhum comprovante enviado ainda.</div>
+              ) : adminComprovantes.map((c) => (
+                <div key={c.id} className="px-4 py-4 space-y-3">
+                  <div className="min-w-0">
+                    <span className="text-xs font-black text-slate-900 dark:text-slate-100 block truncate">{c.userName}</span>
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate">{c.userEmail}</p>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-black uppercase text-slate-700 dark:text-slate-300">{c.period}</span>
+                    {c.userStatus === 'ACTIVE' ? (
+                      <div className="flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-500 uppercase tracking-tighter">Ativo</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <Ban className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+                        <span className="text-[10px] font-black text-rose-700 dark:text-rose-500 uppercase tracking-tighter">Bloqueado</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-black text-slate-900 dark:text-slate-100">
+                      {c.declaredProfit != null
+                        ? `R$ ${c.declaredProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                        : '—'}
+                    </span>
+                    <button
+                      onClick={() => handleOpenComprovante(c.id)}
+                      disabled={openingId === c.id}
+                      className="inline-flex items-center gap-1.5 text-[10px] font-black text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 uppercase tracking-tighter disabled:opacity-50"
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      {openingId === c.id ? 'Abrindo...' : c.fileName}
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => handleToggleUserStatus(c.userId, c.userStatus)}
+                    disabled={updatingUserId === c.userId}
+                    className={cn(
+                      "w-full px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-50",
+                      c.userStatus === 'ACTIVE'
+                        ? "bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/50"
+                        : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50"
+                    )}
+                  >
+                    {updatingUserId === c.userId
+                      ? '...'
+                      : c.userStatus === 'ACTIVE' ? 'Bloquear' : 'Reativar'}
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         </div>

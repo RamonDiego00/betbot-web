@@ -137,66 +137,125 @@ export default function Historico() {
               <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-slate-50/50 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800">
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Data</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Mercado</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Seleção</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Odds</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Stake</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Resultado</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Lucro/Perda</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredTickets.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400 text-xs font-black uppercase italic">Nenhuma aposta encontrada.</td>
+            <>
+            <div className="hidden md:block">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-slate-50/50 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800">
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Data</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Mercado</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Seleção</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Odds</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Stake</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Resultado</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Lucro/Perda</th>
                     </tr>
-                  ) : filteredTickets.map((bet) => (
-                    <tr key={bet.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group cursor-default">
-                      <td className="px-6 py-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase">
-                        {new Date(bet.date).toLocaleDateString('pt-BR')}
-                      </td>
-                      <td className="px-6 py-4 text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-tighter">{bet.market}</td>
-                      <td className="px-6 py-4">
-                        <span className="text-[10px] font-black text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded uppercase tracking-tighter">
-                          {bet.selection}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-xs font-black text-slate-900 dark:text-slate-100">{bet.odds.toFixed(2)}</td>
-                      <td className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400">R$ {bet.stake.toFixed(2)}</td>
-                      <td className="px-6 py-4">
-                        <span className={cn(
-                          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm",
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {filteredTickets.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400 text-xs font-black uppercase italic">Nenhuma aposta encontrada.</td>
+                      </tr>
+                    ) : filteredTickets.map((bet) => (
+                      <tr key={bet.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group cursor-default">
+                        <td className="px-6 py-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase">
+                          {new Date(bet.date).toLocaleDateString('pt-BR')}
+                        </td>
+                        <td className="px-6 py-4 text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-tighter">{bet.market}</td>
+                        <td className="px-6 py-4">
+                          <span className="text-[10px] font-black text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded uppercase tracking-tighter">
+                            {bet.selection}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-xs font-black text-slate-900 dark:text-slate-100">{bet.odds.toFixed(2)}</td>
+                        <td className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400">R$ {bet.stake.toFixed(2)}</td>
+                        <td className="px-6 py-4">
+                          <span className={cn(
+                            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm",
+                            bet.result === 'WIN' ? "text-emerald-700 dark:text-emerald-400" :
+                            bet.result === 'LOSS' ? "text-rose-700 dark:text-rose-400" :
+                            bet.result === 'VOID' ? "text-slate-500 dark:text-slate-400" :
+                            "text-amber-600 dark:text-amber-400"
+                          )}>
+                            {bet.result === 'WIN' ? <ArrowUpRight className="h-3 w-3" /> :
+                             bet.result === 'LOSS' ? <ArrowDownRight className="h-3 w-3" /> :
+                             bet.result === 'VOID' ? <Minus className="h-3 w-3" /> :
+                             <Clock className="h-3 w-3" />}
+                            {bet.result === 'WIN' ? 'Win' :
+                             bet.result === 'LOSS' ? 'Loss' :
+                             bet.result === 'VOID' ? 'Void' : 'Pending'}
+                          </span>
+                        </td>
+                        <td className={cn(
+                          "px-6 py-4 text-right text-xs font-black",
                           bet.result === 'WIN' ? "text-emerald-700 dark:text-emerald-400" :
-                          bet.result === 'LOSS' ? "text-rose-700 dark:text-rose-400" :
-                          bet.result === 'VOID' ? "text-slate-500 dark:text-slate-400" :
-                          "text-amber-600 dark:text-amber-400"
+                          bet.result === 'LOSS' ? "text-rose-700 dark:text-rose-400" : "text-slate-400 dark:text-slate-500"
                         )}>
-                          {bet.result === 'WIN' ? <ArrowUpRight className="h-3 w-3" /> :
-                           bet.result === 'LOSS' ? <ArrowDownRight className="h-3 w-3" /> :
-                           bet.result === 'VOID' ? <Minus className="h-3 w-3" /> :
-                           <Clock className="h-3 w-3" />}
-                          {bet.result === 'WIN' ? 'Win' :
-                           bet.result === 'LOSS' ? 'Loss' :
-                           bet.result === 'VOID' ? 'Void' : 'Pending'}
-                        </span>
-                      </td>
-                      <td className={cn(
-                        "px-6 py-4 text-right text-xs font-black",
+                          {bet.result === 'WIN' ? '+' : ''}R$ {bet.profit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+              {filteredTickets.length === 0 ? (
+                <div className="px-6 py-12 text-center text-slate-500 dark:text-slate-400 text-xs font-black uppercase italic">Nenhuma aposta encontrada.</div>
+              ) : filteredTickets.map((bet) => (
+                <div key={bet.id} className="px-4 py-4 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-tighter truncate">{bet.market}</span>
+                    <span className={cn(
+                      "shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm",
+                      bet.result === 'WIN' ? "text-emerald-700 dark:text-emerald-400" :
+                      bet.result === 'LOSS' ? "text-rose-700 dark:text-rose-400" :
+                      bet.result === 'VOID' ? "text-slate-500 dark:text-slate-400" :
+                      "text-amber-600 dark:text-amber-400"
+                    )}>
+                      {bet.result === 'WIN' ? <ArrowUpRight className="h-3 w-3" /> :
+                       bet.result === 'LOSS' ? <ArrowDownRight className="h-3 w-3" /> :
+                       bet.result === 'VOID' ? <Minus className="h-3 w-3" /> :
+                       <Clock className="h-3 w-3" />}
+                      {bet.result === 'WIN' ? 'Win' :
+                       bet.result === 'LOSS' ? 'Loss' :
+                       bet.result === 'VOID' ? 'Void' : 'Pending'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded uppercase tracking-tighter">
+                      {bet.selection}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Odds</p>
+                      <p className="text-xs font-black text-slate-900 dark:text-slate-100">{bet.odds.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Stake</p>
+                      <p className="text-xs font-bold text-slate-500 dark:text-slate-400">R$ {bet.stake.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Lucro/Perda</p>
+                      <p className={cn(
+                        "text-xs font-black",
                         bet.result === 'WIN' ? "text-emerald-700 dark:text-emerald-400" :
                         bet.result === 'LOSS' ? "text-rose-700 dark:text-rose-400" : "text-slate-400 dark:text-slate-500"
                       )}>
                         {bet.result === 'WIN' ? '+' : ''}R$ {bet.profit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                    {new Date(bet.date).toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+              ))}
             </div>
+            </>
           )}
 
           {/* Paginação */}
