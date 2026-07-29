@@ -18,48 +18,15 @@ O Ramon usa este painel para **monitorar e operar** a automação das apostas em
 
 ## Estrutura do projeto
 
-```
-app/
-  page.tsx              # Dashboard principal (KPIs, partidas, bankroll)
-  layout.tsx            # Root layout + auth guard
-  login/page.tsx        # Login Google OAuth + debug login
-  auth/callback/page.tsx# Handler do callback OAuth
-  automacao/page.tsx    # Status do worker Maestro + fila de comandos
-  historico/page.tsx    # Histórico de apostas (tabela com filtro)
-  financeiro/page.tsx   # Finanças, gráfico mensal, metas
-  settings/page.tsx     # Preferências, integração Maestro, logout
-
-components/
-  Sidebar.tsx           # Navegação lateral fixa
-
-lib/
-  auth.ts               # Leitura/escrita do token JWT no localStorage
-  utils.ts              # cn() para classNames
-  api/
-    client.ts           # Instância Axios com interceptors JWT e tratamento de erros
-    services/
-      auth.ts           # POST /api/v1/auth/debug-login
-      dashboard.ts      # GET /api/v1/dashboard/{summary,bankrolls,games}
-      automation.ts     # GET /api/v1/automation/machines + /api/v1/bets/daily-generation
-      ticket.ts         # GET/POST /api/v1/tickets/history
-
-types/
-  api.ts                # Todas as interfaces TypeScript dos DTOs do backend
-```
+App Router do Next.js em `app/` (uma pasta por rota), serviços de API em
+`lib/api/services/*.ts`, tipos dos DTOs em `types/api.ts`, componente de navegação em
+`components/Sidebar.tsx` — `find app lib components types -type f` mostra o estado atual.
 
 ---
 
 ## Tech stack
 
-| Camada | Tecnologia |
-|--------|-----------|
-| Framework | Next.js 16.2.3 (App Router) |
-| UI | React 19 + TailwindCSS 4 |
-| HTTP | Axios 1.15 com interceptors |
-| Icons | lucide-react |
-| Notificações | sonner (toasts) |
-| Auth | Google OAuth2 via backend + localStorage JWT |
-| Linguagem | TypeScript 5 (modo strict) |
+Ver `package.json` (Next.js/React/Tailwind/Axios/lucide-react/sonner, TypeScript modo strict).
 
 ---
 
@@ -182,11 +149,6 @@ Este projeto é parte de uma stack de automação. Entender o papel de cada comp
 ---
 
 ## Como rodar
-
-```bash
-npm install
-npm run dev     # http://localhost:3000
-```
 
 Backend Java deve estar rodando em `localhost:8080` para as APIs funcionarem.
 

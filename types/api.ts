@@ -127,6 +127,48 @@ export interface MatchDetail {
   legs: MatchBetLeg[];
 }
 
+// Shape real de GET /api/v1/dashboard/matches/{fixtureId}/insights
+export interface RecentFormEntry {
+  fixtureId: number;
+  date: string;
+  opponentName: string;
+  teamScore: number | null;
+  opponentScore: number | null;
+  result: 'W' | 'D' | 'L';
+}
+
+export interface TeamAverages {
+  goalsForAverage: number;
+  goalsAgainstAverage: number;
+  cornersAverage: number;
+}
+
+export interface TeamInsights {
+  teamId: number | null;
+  teamName: string | null;
+  recentForm: RecentFormEntry[];
+  averages: TeamAverages | null;
+}
+
+export interface MarketSelection {
+  selection: string;
+  odd: number;
+  bookmakerName: string;
+}
+
+export interface MarketOdds {
+  marketType: string;
+  marketLabel: string;
+  selections: MarketSelection[];
+}
+
+export interface MatchInsights {
+  fixtureId: number;
+  homeTeam: TeamInsights;
+  awayTeam: TeamInsights;
+  markets: MarketOdds[];
+}
+
 // --- Automação & Máquinas ---
 
 // Shape real de GET /api/v1/automation/machines
