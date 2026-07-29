@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   TrendingUp,
   Wallet,
   Percent,
   ChevronDown,
   ChevronUp,
-  Star,
+  ChevronRight,
   Activity,
   Calendar,
   Loader2,
@@ -22,11 +23,18 @@ import { DashboardSummary, DashboardLeagueGames, BetWorkerJsonResponse, WorkerBe
 // --- TYPES ---
 interface StatCardProps { label: string; value: string; icon: React.ElementType; trend: string; type: 'neutral' | 'success' | 'danger'; }
 
-const TeamLogo = ({ name }: { name: string }) => (
-  <div className="h-6 w-6 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
-    <span className="text-[10px] font-black text-slate-400 dark:text-slate-500">{name?.charAt(0) || '?'}</span>
-  </div>
-);
+const TeamLogo = ({ name, logoUrl }: { name: string; logoUrl?: string }) => {
+  const [errored, setErrored] = useState(false);
+  return (
+    <div className="h-6 w-6 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm shrink-0">
+      {logoUrl && !errored ? (
+        <img src={logoUrl} alt={name} className="h-full w-full object-contain" onError={() => setErrored(true)} />
+      ) : (
+        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500">{name?.charAt(0) || '?'}</span>
+      )}
+    </div>
+  );
+};
 
 const StatCard = ({ label, value, icon: Icon, trend, type }: StatCardProps) => (
   <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-md">
@@ -68,6 +76,8 @@ const CategoryBadge = ({ category }: { category: WorkerBetTicket['category'] }) 
   );
 };
 
+type PeriodPreset = 'daily' | 'weekly' | 'monthly' | 'custom';
+
 export default function Dashboard() {
   const [expandedLeagues, setExpandedLeagues] = useState<string[]>([]);
   const [leaguesData, setLeaguesData] = useState<DashboardLeagueGames[]>([]);
@@ -75,12 +85,21 @@ export default function Dashboard() {
   const [dailyBets, setDailyBets] = useState<BetWorkerJsonResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [periodPreset, setPeriodPreset] = useState<PeriodPreset>('daily');
+  const [customRange, setCustomRange] = useState<{ start: string; end: string } | null>(null);
+  const [rangeDraft, setRangeDraft] = useState({ start: '', end: '' });
+  const [showRangePicker, setShowRangePicker] = useState(false);
+
   useEffect(() => {
     async function fetchData() {
       try {
+        const summaryParams = customRange
+          ? { period: 'custom', startDate: customRange.start, endDate: customRange.end }
+          : { period: periodPreset };
+
         const [gamesByLeague, summaryData, dailyBetsData] = await Promise.all([
           dashboardService.getGamesByLeague(),
-          dashboardService.getSummary(),
+          dashboardService.getSummary(summaryParams),
           automationService.getDailyBets().catch(() => null)
         ]);
 
@@ -100,9 +119,30 @@ export default function Dashboard() {
       }
     }
     fetchData();
-  }, []);
+  }, [periodPreset, customRange]);
 
   const toggleLeague = (league: string) => setExpandedLeagues(prev => prev.includes(league) ? prev.filter(l => l !== league) : [...prev, league]);
+
+  const handlePresetChange = (preset: Exclude<PeriodPreset, 'custom'>) => {
+    setPeriodPreset(preset);
+    setCustomRange(null);
+    setShowRangePicker(false);
+  };
+
+  const handleApplyCustomRange = () => {
+    if (!rangeDraft.start || !rangeDraft.end) return;
+    setPeriodPreset('custom');
+    setCustomRange({ start: rangeDraft.start, end: rangeDraft.end });
+    setShowRangePicker(false);
+  };
+
+  const periodLabel = customRange
+    ? 'Personalizado'
+    : periodPreset === 'weekly'
+      ? 'Semana'
+      : periodPreset === 'monthly'
+        ? 'Mês'
+        : 'Dia';
 
   const formattedDate = new Intl.DateTimeFormat('pt-BR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
@@ -116,9 +156,9 @@ export default function Dashboard() {
 
   const stats: StatCardProps[] = summary ? [
     { label: 'Saldo Total', value: `R$ ${(summary.totalBalance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Wallet, trend: 'N/A', type: 'neutral' },
-    { label: 'Lucro (Mês)', value: `R$ ${(summary.monthlyProfit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: TrendingUp, trend: `${summary.overallRoi || 0}% ROI`, type: (summary.monthlyProfit || 0) >= 0 ? 'success' : 'danger' },
-    { label: 'Win Rate (Dia)', value: `${winRate}%`, icon: Percent, trend: `${summary.dailyStats.won}W / ${summary.dailyStats.lost}L`, type: 'neutral' },
-    { label: 'Apostas (Dia)', value: (summary.dailyStats.total || 0).toString(), icon: Activity, trend: `${summary.dailyStats.pending} PEND`, type: 'neutral' },
+    { label: `Lucro (${periodLabel})`, value: `R$ ${(summary.monthlyProfit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: TrendingUp, trend: `${summary.overallRoi || 0}% ROI`, type: (summary.monthlyProfit || 0) >= 0 ? 'success' : 'danger' },
+    { label: `Win Rate (${periodLabel})`, value: `${winRate}%`, icon: Percent, trend: `${summary.dailyStats.won}W / ${summary.dailyStats.lost}L`, type: 'neutral' },
+    { label: `Apostas (${periodLabel})`, value: (summary.dailyStats.total || 0).toString(), icon: Activity, trend: `${summary.dailyStats.pending} PEND`, type: 'neutral' },
   ] : [];
 
   if (loading) {
@@ -131,12 +171,104 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
-      <header>
-        <h2 className="text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight italic uppercase">Visão Geral</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 font-bold uppercase tracking-tighter">
-          <Calendar className="h-4 w-4 text-brand-600 dark:text-brand-400" />
-          {formattedDate}
-        </p>
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight italic uppercase">Visão Geral</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 font-bold uppercase tracking-tighter">
+            <Calendar className="h-4 w-4 text-brand-600 dark:text-brand-400" />
+            {formattedDate}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => handlePresetChange('daily')}
+            className={cn(
+              "px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm border",
+              periodPreset === 'daily' && !customRange
+                ? "bg-brand-600 border-brand-600 text-white"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+            )}
+          >
+            Hoje
+          </button>
+          <button
+            type="button"
+            onClick={() => handlePresetChange('weekly')}
+            className={cn(
+              "px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm border",
+              periodPreset === 'weekly' && !customRange
+                ? "bg-brand-600 border-brand-600 text-white"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+            )}
+          >
+            Semana
+          </button>
+          <button
+            type="button"
+            onClick={() => handlePresetChange('monthly')}
+            className={cn(
+              "px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm border",
+              periodPreset === 'monthly' && !customRange
+                ? "bg-brand-600 border-brand-600 text-white"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+            )}
+          >
+            Mês
+          </button>
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setRangeDraft(customRange ?? { start: '', end: '' });
+                setShowRangePicker((prev) => !prev);
+              }}
+              className={cn(
+                "px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm border",
+                customRange
+                  ? "bg-brand-600 border-brand-600 text-white"
+                  : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+              )}
+            >
+              Personalizado
+            </button>
+
+            {showRangePicker && (
+              <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-4 z-20 space-y-3">
+                <div className="space-y-1">
+                  <label htmlFor="range-start" className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">De</label>
+                  <input
+                    id="range-start"
+                    type="date"
+                    value={rangeDraft.start}
+                    onChange={(e) => setRangeDraft((prev) => ({ ...prev, start: e.target.value }))}
+                    className="w-full px-3 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="range-end" className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Até</label>
+                  <input
+                    id="range-end"
+                    type="date"
+                    value={rangeDraft.end}
+                    onChange={(e) => setRangeDraft((prev) => ({ ...prev, end: e.target.value }))}
+                    className="w-full px-3 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleApplyCustomRange}
+                  disabled={!rangeDraft.start || !rangeDraft.end}
+                  className="w-full px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider text-white bg-brand-600 hover:bg-brand-700 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Aplicar
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -170,7 +302,11 @@ export default function Dashboard() {
                   {isExpanded && (
                     <div className="divide-y divide-slate-100 dark:divide-slate-800">
                       {leagueInfo.matches.map((match) => (
-                        <div key={match.match_id} className="flex items-center py-3.5 px-4 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors cursor-pointer group">
+                        <Link
+                          key={match.match_id}
+                          href={`/confronto/${match.match_id}`}
+                          className="flex items-center py-3.5 px-4 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors cursor-pointer group"
+                        >
                           <div className="w-14 shrink-0 flex flex-col items-start justify-center font-black">
                             {match.status === '1H' || match.status === '2H' || match.status === 'HT' ? (
                               <span className="text-[10px] text-rose-600 animate-pulse">AO VIVO ({match.status})</span>
@@ -183,7 +319,7 @@ export default function Dashboard() {
                           <div className="flex-1 min-w-0 flex items-center justify-center gap-2 sm:gap-6 px-4">
                             <div className="min-w-0 flex items-center justify-end gap-1.5 sm:gap-3 flex-1">
                               <span className="text-xs font-bold text-slate-900 dark:text-slate-100 text-right truncate">{match.home}</span>
-                              <TeamLogo name={match.home} />
+                              <TeamLogo name={match.home} logoUrl={match.homeTeamLogo} />
                             </div>
                             <div className="shrink-0 flex items-center gap-2 min-w-[50px] justify-center bg-slate-900 dark:bg-slate-950 px-2 py-1 rounded border border-slate-800 dark:border-slate-700 text-white shadow-sm">
                               <span className="text-xs font-black">{match.homeScore ?? '-'}</span>
@@ -191,12 +327,12 @@ export default function Dashboard() {
                               <span className="text-xs font-black">{match.awayScore ?? '-'}</span>
                             </div>
                             <div className="min-w-0 flex items-center justify-start gap-1.5 sm:gap-3 flex-1">
-                              <TeamLogo name={match.away} />
+                              <TeamLogo name={match.away} logoUrl={match.awayTeamLogo} />
                               <span className="text-xs font-bold text-slate-900 dark:text-slate-100 text-left truncate">{match.away}</span>
                             </div>
                           </div>
-                          <div className="w-6 shrink-0 flex justify-end"><Star className="h-3 w-3 text-slate-200 dark:text-slate-700 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors" /></div>
-                        </div>
+                          <div className="w-6 shrink-0 flex justify-end"><ChevronRight className="h-3.5 w-3.5 text-slate-300 dark:text-slate-700 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors" /></div>
+                        </Link>
                       ))}
                     </div>
                   )}

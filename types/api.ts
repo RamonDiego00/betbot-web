@@ -98,11 +98,33 @@ export interface DashboardLeagueMatch {
   status: string;
   homeScore?: number;
   awayScore?: number;
+  homeTeamLogo?: string;
+  awayTeamLogo?: string;
 }
 
 export interface DashboardLeagueGames {
   league: string;
   matches: DashboardLeagueMatch[];
+}
+
+// Shape real de GET /api/v1/dashboard/matches/{fixtureId}
+export interface MatchBetLeg {
+  market: string | null;
+  selection: string | null;
+  odds: number | null;
+  modelProb: number | null;
+  fairOdd: number | null;
+  edge: number | null;
+  stake: number | null;
+  won: boolean | null;
+  status: string | null;
+}
+
+export interface MatchDetail {
+  fixtureId: number;
+  archetype: string | null;
+  archetypeConfidence: number | null;
+  legs: MatchBetLeg[];
 }
 
 // --- Automação & Máquinas ---
@@ -230,23 +252,4 @@ export interface CreateTicketPayload {
   odd: number;
   status: 'WIN' | 'LOSS' | 'PENDING';
   type: string; // GOALS, CORNERS, BTTS, etc.
-}
-
-// --- Billing (comprovante de lucro mensal) ---
-
-// Shape real de GET /api/v1/billing/statements (comprovantes do usuário logado)
-export interface BillingStatement {
-  id: string;
-  period: string; // "YYYY-MM"
-  declaredProfit: number | null;
-  fileName: string;
-  uploadedAt: string; // ISO String
-}
-
-// Shape real de GET /api/v1/billing/statements/all (somente admin)
-export interface AdminBillingStatement extends BillingStatement {
-  userId: string;
-  userName: string;
-  userEmail: string;
-  userStatus: 'ACTIVE' | 'SUSPENDED';
 }

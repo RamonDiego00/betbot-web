@@ -10,10 +10,10 @@ import {
 
 export const dashboardService = {
   /**
-   * Resumo financeiro do dashboard (KPIs principais + stats do dia)
+   * Resumo financeiro do dashboard (KPIs principais + stats do período)
    */
-  getSummary: async (): Promise<DashboardSummary> => {
-    const response = await apiClient.get<DashboardSummary>('/api/v1/dashboard/summary');
+  getSummary: async (params?: { period?: string; startDate?: string; endDate?: string }): Promise<DashboardSummary> => {
+    const response = await apiClient.get<DashboardSummary>('/api/v1/dashboard/summary', { params });
     return response.data;
   },
 
