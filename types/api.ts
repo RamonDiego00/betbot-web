@@ -258,34 +258,22 @@ export interface BetWorkerJsonResponse {
 
 // --- Histórico (Tickets) ---
 
-// Shape real de GET /api/v1/historico-apostas (campo por campo do BetHistoryItemDTO)
-export interface BetHistoryItem {
-  id: string;
-  date: string;         // ISO String (OffsetDateTime serializado)
-  match: string;        // "Home vs Away"
-  homeTeam: string | null;
-  awayTeam: string | null;
-  league: string | null;
-  market: string;
-  selection: string;
-  odd: number;          // atenção: API usa "odd" (sem 's')
-  stake: number;
-  stakeDisplay: string;
-  status: 'WIN' | 'LOSS' | 'PENDING' | 'VOID'; // BetStatus da API
-  profit: number | null;
-  profitDisplay: string | null;
+export type TicketHistoryPeriod = 'daily' | 'weekly' | 'monthly' | 'custom';
+
+// Shape real de GET /api/v1/tickets/history (granularidade de 1 linha por TICKET,
+// não por perna/mercado — não existe paginação nesse endpoint).
+export interface TicketHistoryItem {
+  ticketId: string;
+  date: string; // "YYYY-MM-DD"
+  amountWagered: number;
+  result: 'WIN' | 'LOSS' | 'VOID' | 'PENDING';
+  profitLoss: number;
 }
 
-// Tipo normalizado para consumo nas páginas (evita `odd` vs `odds` e `status` vs `result`)
-export interface Ticket {
-  id: string;
-  date: string;
-  market: string;
-  selection: string;
-  odds: number;         // normalizado de `odd`
-  stake: number;
-  profit: number;
-  result: 'WIN' | 'LOSS' | 'VOID' | 'PENDING'; // normalizado de `status`
+export interface TicketHistoryResponse {
+  period: TicketHistoryPeriod;
+  totalTickets: number;
+  tickets: TicketHistoryItem[];
 }
 
 export interface CreateTicketPayload {

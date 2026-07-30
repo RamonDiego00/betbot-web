@@ -1,40 +1,28 @@
 import { apiClient } from '../client';
-import { BetHistoryItem, PagedResponse, Ticket } from '@/types/api';
-
-function mapToTicket(item: BetHistoryItem): Ticket {
-  return {
-    id: item.id,
-    date: item.date,
-    market: item.market,
-    selection: item.selection,
-    odds: item.odd,
-    stake: item.stake,
-    profit: item.profit ?? 0,
-    result: item.status,
-  };
-}
+import { TicketHistoryItem, TicketHistoryPeriod, TicketHistoryResponse } from '@/types/api';
 
 export const ticketService = {
   /**
-   * Histórico paginado de apostas.
-   * GET /api/v1/historico-apostas → PagedResponse<BetHistoryItem>
+   * Histórico de apostas (granularidade por ticket, sem paginação).
+   * GET /api/v1/tickets/history?period={daily|weekly|monthly|custom}&startDate&endDate
    *
-   * Retorna os tickets normalizados (odd→odds, status→result) e a paginação.
+   * `startDate`/`endDate` só são considerados quando `period=custom`.
    */
   getHistory: async (
-    page = 0,
-    size = 20,
-    filters?: Record<string, string>,
-  ): Promise<{ tickets: Ticket[]; totalPages: number; totalItems: number; currentPage: number }> => {
-    const response = await apiClient.get<PagedResponse<BetHistoryItem>>('/api/v1/historico-apostas', {
-      params: { page, size, ...filters },
-    });
-    const paged = response.data;
+    period: TicketHistoryPeriod = 'daily',
+    range?: { startDate?: string; endDate?: string },
+  ): Promise<{ tickets: TicketHistoryItem[]; totalTickets: number; period: TicketHistoryPeriod }> => {
+    const params: Record<string, string> = { period };
+    if (period === 'custom') {
+      if (range?.startDate) params.startDate = range.startDate;
+      if (range?.endDate) params.endDate = range.endDate;
+    }
+    const response = await apiClient.get<TicketHistoryResponse>('/api/v1/tickets/history', { params });
+    const data = response.data;
     return {
-      tickets: (paged.items ?? []).map(mapToTicket),
-      totalPages: paged.totalPages,
-      totalItems: paged.totalItems,
-      currentPage: paged.currentPage,
+      tickets: data.tickets ?? [],
+      totalTickets: data.totalTickets ?? 0,
+      period: data.period ?? period,
     };
   },
 };
