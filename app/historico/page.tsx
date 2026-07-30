@@ -20,6 +20,11 @@ import { ticketService } from '@/lib/api/services/ticket';
 import { dashboardService } from '@/lib/api/services/dashboard';
 import { TicketHistoryItem, DashboardSummary } from '@/types/api';
 
+function formatDateBR(isoDate: string): string {
+  const [year, month, day] = isoDate.split('-');
+  return `${day}/${month}/${year}`;
+}
+
 // --- COMPONENTES AUXILIARES ---
 
 const StatCard = ({ label, value, icon: Icon, color, bg }: { label: string; value: string; icon: React.ElementType; color: string; bg: string }) => (
@@ -268,7 +273,7 @@ export default function Historico() {
                     ) : filteredTickets.map((bet) => (
                       <tr key={bet.ticketId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group cursor-default">
                         <td className="px-6 py-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase">
-                          {new Date(bet.date).toLocaleDateString('pt-BR')}
+                          {formatDateBR(bet.date)}
                         </td>
                         <td className="px-6 py-4">
                           <span className="text-[10px] font-black text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded uppercase tracking-tighter">
@@ -347,7 +352,7 @@ export default function Historico() {
                     </div>
                   </div>
                   <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
-                    {new Date(bet.date).toLocaleDateString('pt-BR')}
+                    {formatDateBR(bet.date)}
                   </p>
                 </div>
               ))}
