@@ -66,7 +66,7 @@ export default function Financeiro() {
     },
     {
       label: 'ROI Geral',
-      value: `${summary.overallRoi || 0}%`,
+      value: `${(summary.overallRoi || 0).toFixed(2)}%`,
       icon: ArrowUpRight,
       color: 'text-amber-600 dark:text-amber-400',
       bg: 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800',
