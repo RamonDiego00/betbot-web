@@ -102,7 +102,7 @@ export default function Historico() {
     { label: 'Total de Bets', value: (summary.dailyStats.total ?? 0).toLocaleString(), icon: Activity, color: 'text-brand-600 dark:text-brand-400', bg: 'bg-brand-50 dark:bg-brand-950/20' },
     { label: 'Win Rate', value: `${winRate}%`, icon: Target, color: 'text-emerald-700 dark:text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950/20' },
     { label: 'ROI Geral', value: `${summary.overallRoi}%`, icon: BarChart, color: 'text-emerald-700 dark:text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950/20' },
-    { label: 'Lucro Total', value: `R$ ${summary.monthlyProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Trophy, color: 'text-amber-500 dark:text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/20' },
+    { label: 'Lucro Total', value: `R$ ${summary.monthlyProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: Trophy, color: 'text-amber-500 dark:text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/20' },
   ] : [];
 
   const filteredTickets = tickets.filter((ticket) =>
@@ -303,7 +303,7 @@ export default function Historico() {
                           bet.result === 'WIN' ? "text-emerald-700 dark:text-emerald-400" :
                           bet.result === 'LOSS' ? "text-rose-700 dark:text-rose-400" : "text-slate-400 dark:text-slate-500"
                         )}>
-                          {bet.result === 'WIN' ? '+' : ''}R$ {bet.profitLoss.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          {bet.result === 'WIN' ? '+' : ''}R$ {bet.profitLoss.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                       </tr>
                     ))}
@@ -347,7 +347,7 @@ export default function Historico() {
                         bet.result === 'WIN' ? "text-emerald-700 dark:text-emerald-400" :
                         bet.result === 'LOSS' ? "text-rose-700 dark:text-rose-400" : "text-slate-400 dark:text-slate-500"
                       )}>
-                        {bet.result === 'WIN' ? '+' : ''}R$ {bet.profitLoss.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        {bet.result === 'WIN' ? '+' : ''}R$ {bet.profitLoss.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     </div>
                   </div>

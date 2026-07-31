@@ -155,8 +155,8 @@ export default function Dashboard() {
   const dailyTickets = dailyBets?.tickets ?? [];
 
   const stats: StatCardProps[] = summary ? [
-    { label: 'Saldo Total', value: `R$ ${(summary.totalBalance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Wallet, trend: 'N/A', type: 'neutral' },
-    { label: `Lucro (${periodLabel})`, value: `R$ ${(summary.monthlyProfit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: TrendingUp, trend: `${summary.overallRoi || 0}% ROI`, type: (summary.monthlyProfit || 0) >= 0 ? 'success' : 'danger' },
+    { label: 'Saldo Total', value: `R$ ${(summary.totalBalance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: Wallet, trend: 'N/A', type: 'neutral' },
+    { label: `Lucro (${periodLabel})`, value: `R$ ${(summary.monthlyProfit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: TrendingUp, trend: `${summary.overallRoi || 0}% ROI`, type: (summary.monthlyProfit || 0) >= 0 ? 'success' : 'danger' },
     { label: `Win Rate (${periodLabel})`, value: `${winRate}%`, icon: Percent, trend: `${summary.dailyStats.won}W / ${summary.dailyStats.lost}L`, type: 'neutral' },
     { label: `Apostas (${periodLabel})`, value: (summary.dailyStats.total || 0).toString(), icon: Activity, trend: `${summary.dailyStats.pending} PEND`, type: 'neutral' },
   ] : [];

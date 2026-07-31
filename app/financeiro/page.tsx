@@ -52,14 +52,14 @@ export default function Financeiro() {
   const overviewCards = summary ? [
     {
       label: 'Saldo Total',
-      value: `R$ ${(summary.totalBalance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      value: `R$ ${(summary.totalBalance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       icon: Wallet,
       color: 'text-brand-600 dark:text-brand-400',
       bg: 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800',
     },
     {
       label: 'Lucro do Mês',
-      value: `R$ ${(summary.monthlyProfit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      value: `R$ ${(summary.monthlyProfit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       icon: ArrowUpRight,
       color: 'text-emerald-700 dark:text-emerald-400',
       bg: 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800',
@@ -138,7 +138,7 @@ export default function Financeiro() {
                       "absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-slate-950 text-white text-[10px] font-black py-1.5 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 uppercase tracking-tighter",
                       activeBarIdx === idx && "opacity-100"
                     )}>
-                      R$ {data.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {data.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>
                   <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-tighter">{data.mes}</span>
@@ -182,7 +182,7 @@ export default function Financeiro() {
                       </td>
                       <td className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">BRL</td>
                       <td className="px-6 py-4 text-xs font-black text-slate-900 dark:text-slate-100">
-                        {s.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        {s.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end items-center gap-1.5">
@@ -210,7 +210,7 @@ export default function Financeiro() {
                   </div>
                 </div>
                 <div className="text-xs font-black text-slate-900 dark:text-slate-100">
-                  {s.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}{' '}
+                  {s.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
                   <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">BRL</span>
                 </div>
               </div>
