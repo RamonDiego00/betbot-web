@@ -73,6 +73,29 @@ export interface SaldoCasaItem {
   statusSincronizacao: string; // 'SINCRONIZADO' | 'MANUAL'
 }
 
+export interface PontoSaldo {
+  data: string; // "YYYY-MM-DD"
+  saldo: number;
+}
+
+export interface TopMercadoItem {
+  mercado: string;
+  linha: string;
+  totalPernas: number;
+  pernasGanhas: number;
+  winRate: number; // 0-100
+}
+
+export interface FluxoCaixaItem {
+  saldoInicial: number;
+  depositos: number;
+  saques: number;
+  ganhos: number;
+  perdas: number;
+  stakesEmAberto: number;
+  saldoFinal: number;
+}
+
 // --- Games & Matches ---
 
 export interface Game {
