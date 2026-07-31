@@ -60,11 +60,11 @@ const mapTicketStatus = (status: WorkerBetTicket['status']): BadgeStatus => {
 
 const StatusBadge = ({ status }: { status: BadgeStatus }) => {
   const styles = {
-    pending: "bg-white/5 text-slate-400 border-[#1A2133]",
-    executing: "bg-[#5842F6]/10 text-[#8B7CFA] animate-pulse border-[#5842F6]/40",
-    completed: "bg-emerald-950/30 text-emerald-400 border-emerald-800",
-    failed: "bg-rose-950/30 text-rose-400 border-rose-800",
-    skipped: "bg-white/5 text-slate-500 border-[#1A2133]",
+    pending: "bg-slate-100 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800",
+    executing: "bg-brand-50 dark:bg-brand-950/20 text-brand-600 dark:text-brand-400 animate-pulse border-brand-200 dark:border-brand-800",
+    completed: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800",
+    failed: "bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800",
+    skipped: "bg-slate-100 dark:bg-slate-800/40 text-slate-500 dark:text-slate-500 border-slate-200 dark:border-slate-800",
   };
   const labels = {
     pending: "Aguardando",
@@ -82,7 +82,7 @@ const StatusBadge = ({ status }: { status: BadgeStatus }) => {
 
 function logLevelColor(level: string) {
   switch (level) {
-    case 'INFO':  return 'text-[#8B7CFA]';
+    case 'INFO':  return 'text-brand-600 dark:text-brand-400';
     case 'DEBUG': return 'text-slate-400';
     case 'WARN':  return 'text-amber-400';
     case 'ERROR': return 'text-rose-400';
@@ -309,7 +309,7 @@ export default function Automacao() {
 
   if (loading) {
     return (
-      <div className="h-[60vh] flex items-center justify-center bg-[#080B11]">
+      <div className="h-[60vh] flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
       </div>
     );
@@ -317,22 +317,21 @@ export default function Automacao() {
 
   return (
     <>
-      <div className="-m-4 sm:-mx-6 lg:-m-8 min-h-screen bg-[#080B11] p-4 sm:p-6 lg:p-8">
-        <div className="space-y-8 animate-in fade-in duration-500 pb-12">
+      <div className="space-y-8 animate-in fade-in duration-500 pb-12">
           {/* Header com Controles Master */}
           <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h2 className="text-3xl font-black text-slate-100 tracking-tight italic uppercase">Automação Mobile</h2>
-              <p className="text-sm text-slate-400 mt-1 flex items-center gap-2 font-bold uppercase tracking-tighter">
-                <Cpu className="h-4 w-4 text-[#8B7CFA]" />
+              <h2 className="text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight italic uppercase">Automação Mobile</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 font-bold uppercase tracking-tighter">
+                <Cpu className="h-4 w-4 text-brand-600 dark:text-brand-400" />
                 Controlando Server Local via Maestro Flow
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full md:w-auto">
-              <div className="flex items-center gap-3 bg-[#101522] border border-[#1A2133] rounded-lg px-4 py-2 shadow-sm">
+              <div className="flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 shadow-sm">
                 <span className={cn(
                   "text-[10px] font-black uppercase tracking-wider",
-                  automationMode === 'AUTO' ? "text-[#8B7CFA]" : "text-slate-400"
+                  automationMode === 'AUTO' ? "text-brand-600 dark:text-brand-400" : "text-slate-400 dark:text-slate-500"
                 )}>
                   Automático
                 </span>
@@ -343,8 +342,8 @@ export default function Automacao() {
                   aria-label="Alternar entre modo automático e manual"
                   onClick={() => handleModeChange(automationMode === 'AUTO' ? 'MANUAL' : 'AUTO')}
                   className={cn(
-                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#5842F6] focus:ring-offset-2",
-                    automationMode === 'MANUAL' ? "bg-[#5842F6]" : "bg-white/10"
+                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:ring-offset-2",
+                    automationMode === 'MANUAL' ? "bg-brand-600" : "bg-slate-200 dark:bg-slate-700"
                   )}
                 >
                   <span className={cn(
@@ -354,7 +353,7 @@ export default function Automacao() {
                 </button>
                 <span className={cn(
                   "text-[10px] font-black uppercase tracking-wider",
-                  automationMode === 'MANUAL' ? "text-[#8B7CFA]" : "text-slate-400"
+                  automationMode === 'MANUAL' ? "text-brand-600 dark:text-brand-400" : "text-slate-400 dark:text-slate-500"
                 )}>
                   Manual
                 </span>
@@ -367,7 +366,7 @@ export default function Automacao() {
                     "w-full sm:w-auto justify-center flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider text-white transition-all shadow-sm",
                     isPaused
                       ? "bg-emerald-600 hover:bg-emerald-700"
-                      : "bg-[#5842F6] hover:bg-[#4634D6]"
+                      : "bg-brand-600 hover:bg-brand-700"
                   )}
                 >
                   {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
@@ -380,22 +379,22 @@ export default function Automacao() {
           {/* BLOCO 1: Agendamento + Status do Dispositivo */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Agendamento da Automação */}
-            <div className="bg-[#101522] p-5 rounded-xl border border-[#1A2133] shadow-sm space-y-4">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="text-sm font-black text-slate-100 uppercase tracking-widest flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-[#8B7CFA]" /> Agendamento da Automação
+                <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-brand-600 dark:text-brand-400" /> Agendamento da Automação
                 </h3>
                 <span className={cn(
                   "text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border shrink-0",
                   scheduleEnabled
-                    ? "text-[#8B7CFA] bg-[#5842F6]/10 border-[#5842F6]/40"
-                    : "text-slate-400 bg-white/5 border-[#1A2133]"
+                    ? "text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/20 border-brand-200 dark:border-brand-800"
+                    : "text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800"
                 )}>
                   {scheduleEnabled ? `Ativo às ${scheduleTime}` : 'Desativado'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ligar agendamento</span>
+                <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Ligar agendamento</span>
                 <button
                   type="button"
                   role="switch"
@@ -403,8 +402,8 @@ export default function Automacao() {
                   aria-label="Ativar ou desativar o agendamento da automação"
                   onClick={handleScheduleEnabledToggle}
                   className={cn(
-                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#5842F6] focus:ring-offset-2",
-                    scheduleEnabled ? "bg-[#5842F6]" : "bg-white/10"
+                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:ring-offset-2",
+                    scheduleEnabled ? "bg-brand-600" : "bg-slate-200 dark:bg-slate-700"
                   )}
                 >
                   <span className={cn(
@@ -414,7 +413,7 @@ export default function Automacao() {
                 </button>
               </div>
               <div className="flex items-center gap-3">
-                <label htmlFor="schedule-time" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <label htmlFor="schedule-time" className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                   Rodar às
                 </label>
                 <input
@@ -424,43 +423,43 @@ export default function Automacao() {
                   disabled={!scheduleEnabled}
                   onChange={(e) => handleScheduleTimeChange(e.target.value)}
                   className={cn(
-                    "bg-white/5 border border-[#1A2133] rounded-lg px-3 py-1.5 text-sm font-black text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#5842F6]",
+                    "bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-sm font-black text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20",
                     !scheduleEnabled && "opacity-40 cursor-not-allowed"
                   )}
                 />
               </div>
-              <p className="text-[10px] text-slate-400 font-bold leading-relaxed">
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold leading-relaxed">
                 Horário local do dispositivo em que o agente inicia as apostas do dia.
               </p>
             </div>
 
             {/* Status do Dispositivo */}
-            <div className="bg-[#101522] p-5 rounded-xl border border-[#1A2133] shadow-sm space-y-4">
-              <h3 className="text-sm font-black text-slate-100 uppercase tracking-widest flex items-center gap-2">
-                <Smartphone className="h-4 w-4 text-[#8B7CFA]" /> Status do Dispositivo
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
+                <Smartphone className="h-4 w-4 text-brand-600 dark:text-brand-400" /> Status do Dispositivo
               </h3>
               {isDeviceOnline ? (
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 bg-[#080B11] rounded-lg flex items-center justify-center border border-[#1A2133]">
-                    <Smartphone className="h-6 w-6 text-[#8B7CFA]" />
+                  <div className="h-12 w-12 bg-slate-50 dark:bg-slate-950 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-800">
+                    <Smartphone className="h-6 w-6 text-brand-600 dark:text-brand-400" />
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Conectado</span>
+                      <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">Conectado</span>
                     </div>
-                    <p className="text-sm font-black text-slate-100 uppercase">{deviceStatus?.model}</p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    <p className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase">{deviceStatus?.model}</p>
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                       App {deviceStatus?.appVersion} · Uptime {deviceStatus?.uptime}
                     </p>
                   </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 bg-white/5 rounded-lg flex items-center justify-center border border-[#1A2133]">
+                  <div className="h-12 w-12 bg-slate-100 dark:bg-slate-800/40 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-800">
                     <Smartphone className="h-6 w-6 text-slate-500" />
                   </div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                     Nenhum dispositivo Android conectado
                   </p>
                 </div>
@@ -472,11 +471,11 @@ export default function Automacao() {
             {/* BLOCO 2: Tickets do Dia */}
             <div className="lg:col-span-1 space-y-4">
               <div className="flex items-center justify-between px-1">
-                <h3 className="text-sm font-black text-slate-100 uppercase tracking-widest">Tickets do Dia</h3>
+                <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest">Tickets do Dia</h3>
               </div>
 
-              <div className="bg-[#101522] rounded-xl border border-[#1A2133] overflow-hidden shadow-sm">
-                <div className="divide-y divide-[#1A2133]">
+              <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
                   {(dailyBets?.tickets || []).map((ticket) => {
                     const isLocked = ticket.status === 'IN_PROGRESS' || ticket.status === 'SUCCESS' || ticket.status === 'FAILED';
                     const isExpanded = expandedTicketIds.has(ticket.ticket_id);
@@ -487,7 +486,7 @@ export default function Automacao() {
                     const stakeLabel = isMultiple ? 'Stake do Bilhete' : 'Stake';
                     return (
                       <div key={ticket.ticket_id}>
-                        <div className="p-4 hover:bg-white/5 transition-colors">
+                        <div className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2 min-w-0">
                               <input
@@ -497,11 +496,11 @@ export default function Automacao() {
                                 onChange={(e) => handleSelectionToggle(ticket.ticket_id, e.target.checked)}
                                 aria-label={`Incluir ticket ${ticket.ticket_id} na execução`}
                                 className={cn(
-                                  "h-4 w-4 rounded border-slate-500 text-[#5842F6] focus:ring-2 focus:ring-[#5842F6]/40 accent-[#5842F6] shrink-0",
+                                  "h-4 w-4 rounded border-slate-300 dark:border-slate-500 text-brand-600 focus:ring-2 focus:ring-brand-500/40 accent-brand-600 shrink-0",
                                   disabled && "opacity-40 cursor-not-allowed"
                                 )}
                               />
-                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter truncate">
+                              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-tighter truncate">
                                 {ticket.category} • {ticket.type}
                               </span>
                             </div>
@@ -512,7 +511,7 @@ export default function Automacao() {
                                 onClick={() => toggleTicketExpanded(ticket.ticket_id)}
                                 aria-label={isExpanded ? 'Recolher detalhes do ticket' : 'Expandir detalhes do ticket'}
                                 aria-expanded={isExpanded}
-                                className="h-6 w-6 flex items-center justify-center rounded-lg hover:bg-white/5 text-slate-400"
+                                className="h-6 w-6 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-400 dark:text-slate-500"
                               >
                                 {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                               </button>
@@ -523,28 +522,28 @@ export default function Automacao() {
                           <div className="px-4 pb-4 space-y-3">
                             <div className="space-y-3">
                               {ticket.matches.map((match) => (
-                                <div key={match.match_id} className="rounded-lg border border-[#1A2133] bg-white/5 p-3 space-y-2">
-                                  <h4 className="text-[11px] font-black text-slate-100 uppercase tracking-wide flex items-center gap-1.5">
-                                    <Target className="h-3 w-3 text-[#8B7CFA] shrink-0" />
+                                <div key={match.match_id} className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 p-3 space-y-2">
+                                  <h4 className="text-[11px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-wide flex items-center gap-1.5">
+                                    <Target className="h-3 w-3 text-brand-600 dark:text-brand-400 shrink-0" />
                                     {match.match_name}
                                   </h4>
 
                                   <div className="space-y-2 pl-1">
                                     {match.markets.map((market, mIdx) => (
                                       <div key={`${match.match_id}-${mIdx}`} className="space-y-1">
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                        <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1">
                                           <Layers className="h-2.5 w-2.5 shrink-0" />
                                           {market.market_name}
                                         </p>
                                         <ul className="space-y-0.5 pl-3.5">
                                           {market.selections.map((selection, sIdx) => (
-                                            <li key={`${match.match_id}-${mIdx}-${sIdx}`} className="text-[11px] font-bold text-slate-300">
+                                            <li key={`${match.match_id}-${mIdx}-${sIdx}`} className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
                                               {selection.description}
                                               {selection.period && (
-                                                <span className="text-slate-400 font-semibold"> · {selection.period}</span>
+                                                <span className="text-slate-400 dark:text-slate-400 font-semibold"> · {selection.period}</span>
                                               )}
                                               {selection.team_filter && (
-                                                <span className="text-slate-400 font-semibold"> · {selection.team_filter}</span>
+                                                <span className="text-slate-400 dark:text-slate-400 font-semibold"> · {selection.team_filter}</span>
                                               )}
                                             </li>
                                           ))}
@@ -558,16 +557,16 @@ export default function Automacao() {
 
                             <div className="flex items-center justify-between pt-1">
                               <div>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{stakeLabel}</p>
-                                <p className="text-xs font-black text-slate-100">R$ {ticket.stake.toFixed(2)}</p>
+                                <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{stakeLabel}</p>
+                                <p className="text-xs font-black text-slate-900 dark:text-slate-100">R$ {ticket.stake.toFixed(2)}</p>
                               </div>
                               <div className="text-center">
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Casa</p>
-                                <p className="text-xs font-black text-slate-100">Bet365</p>
+                                <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Casa</p>
+                                <p className="text-xs font-black text-slate-900 dark:text-slate-100">Bet365</p>
                               </div>
                               <div className="text-right">
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{oddLabel}</p>
-                                <p className="text-xs font-black text-[#8B7CFA]">{ticket.total_odd.toFixed(2)}</p>
+                                <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{oddLabel}</p>
+                                <p className="text-xs font-black text-brand-600 dark:text-brand-400">{ticket.total_odd.toFixed(2)}</p>
                               </div>
                             </div>
                           </div>
@@ -576,18 +575,18 @@ export default function Automacao() {
                     );
                   })}
                   {(!dailyBets || dailyBets.tickets.length === 0) && (
-                    <div className="p-8 text-center text-xs text-slate-400 font-bold uppercase italic">Nenhum comando na fila</div>
+                    <div className="p-8 text-center text-xs text-slate-400 dark:text-slate-500 font-bold uppercase italic">Nenhum comando na fila</div>
                   )}
                 </div>
                 {automationMode === 'MANUAL' && (
-                  <div className="p-4 border-t border-[#1A2133]">
+                  <div className="p-4 border-t border-slate-200 dark:border-slate-800">
                     <button
                       type="button"
                       onClick={handleExecuteSelected}
                       disabled={isSubmittingSelection}
                       className={cn(
                         "w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider text-white transition-all shadow-sm",
-                        isSubmittingSelection ? "bg-[#5842F6]/60 cursor-not-allowed" : "bg-[#5842F6] hover:bg-[#4634D6]"
+                        isSubmittingSelection ? "bg-brand-600/60 cursor-not-allowed" : "bg-brand-600 hover:bg-brand-700"
                       )}
                     >
                       {isSubmittingSelection ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
@@ -597,7 +596,7 @@ export default function Automacao() {
                 )}
               </div>
 
-              <p className="flex items-start gap-2 text-[10px] text-slate-400 font-bold px-1 leading-relaxed">
+              <p className="flex items-start gap-2 text-[10px] text-slate-400 dark:text-slate-500 font-bold px-1 leading-relaxed">
                 <ShieldAlert className="h-3.5 w-3.5 shrink-0 mt-0.5 text-slate-500" />
                 As credenciais das casas de aposta ficam salvas localmente na máquina onde o worker roda — nunca são enviadas pra este portal.
               </p>
@@ -606,26 +605,26 @@ export default function Automacao() {
             {/* BLOCO 3: Console Logs (Maestro) */}
             <div className="lg:col-span-2 space-y-4">
               <div className="flex items-center justify-between px-1">
-                <h3 className="text-sm font-black text-slate-100 uppercase tracking-widest flex items-center gap-2">
+                <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
                   <Terminal className="h-4 w-4" /> Maestro Live Logs
                 </h3>
                 <div className="flex items-center gap-4">
                   <button
                     type="button"
                     onClick={() => setLogs([])}
-                    className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 hover:text-slate-100 uppercase tracking-widest transition-colors"
+                    className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 uppercase tracking-widest transition-colors"
                   >
                     <Trash2 className="h-3.5 w-3.5" /> Limpar Logs
                   </button>
-                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1">
+                  <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-1">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
                     Ao Vivo
                   </span>
                 </div>
               </div>
 
-              <div className="bg-[#101522] rounded-xl border border-[#1A2133] p-4 sm:p-6 shadow-xl min-h-[300px] font-mono text-sm relative">
-                <div className="flex items-center gap-2 mb-6 border-b border-[#1A2133] pb-4">
+              <div className="bg-slate-900 rounded-xl border border-slate-800 p-4 sm:p-6 shadow-xl min-h-[300px] font-mono text-sm relative">
+                <div className="flex items-center gap-2 mb-6 border-b border-slate-800 pb-4">
                   <div className="h-3 w-3 rounded-full bg-rose-500" />
                   <div className="h-3 w-3 rounded-full bg-amber-500" />
                   <div className="h-3 w-3 rounded-full bg-emerald-500" />
@@ -657,19 +656,19 @@ export default function Automacao() {
               </div>
 
               {/* Device Preview */}
-              <div className="bg-[#101522] p-4 rounded-xl border border-[#1A2133] flex items-center justify-between shadow-sm transition-all hover:border-[#5842F6] group">
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-sm transition-all hover:border-brand-400 dark:hover:border-brand-500 group">
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 bg-[#080B11] rounded-lg flex items-center justify-center border border-[#1A2133]">
-                    <Smartphone className="h-6 w-6 text-[#8B7CFA] group-hover:scale-110 transition-transform" />
+                  <div className="h-12 w-12 bg-slate-50 dark:bg-slate-950 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-800">
+                    <Smartphone className="h-6 w-6 text-brand-600 dark:text-brand-400 group-hover:scale-110 transition-transform" />
                   </div>
                   <div className="space-y-0.5">
-                    <p className="text-sm font-black text-slate-100 uppercase">{deviceStatus?.model || 'Sem device'}</p>
+                    <p className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase">{deviceStatus?.model || 'Sem device'}</p>
                     <div className="flex items-center gap-2">
                       <span className={cn(
                         "h-1.5 w-1.5 rounded-full animate-pulse",
                         isDeviceOnline ? "bg-emerald-500" : "bg-rose-500"
                       )} />
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                         {deviceStatus ? `App ${deviceStatus.appVersion} · Uptime ${deviceStatus.uptime}` : 'Desconectado'}
                       </p>
                     </div>
@@ -678,35 +677,34 @@ export default function Automacao() {
                 <button
                   type="button"
                   onClick={() => setIsMirrorModalOpen(true)}
-                  className="px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all flex items-center gap-2 border bg-white/5 border-[#1A2133] hover:border-[#5842F6] text-slate-100"
+                  className="px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all flex items-center gap-2 border bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 hover:border-brand-400 dark:hover:border-brand-500 text-slate-900 dark:text-slate-100"
                 >
                   Espelhar Tela <ChevronRight className="h-3 w-3" />
                 </button>
               </div>
             </div>
           </div>
-        </div>
       </div>
 
       {/* Modal de Espelhamento */}
       {isMirrorModalOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Espelhamento do dispositivo">
           <div onClick={() => setIsMirrorModalOpen(false)} aria-hidden="true" className="fixed inset-0 bg-black/50" />
-          <div className="relative bg-[#101522] border border-[#1A2133] rounded-xl shadow-2xl w-full max-w-sm p-4 z-[71]">
+          <div className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl w-full max-w-sm p-4 z-[71]">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
                 <MonitorSmartphone className="h-3.5 w-3.5" /> Espelho do Dispositivo
               </span>
               <button
                 type="button"
                 onClick={() => setIsMirrorModalOpen(false)}
                 aria-label="Fechar espelhamento"
-                className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-white/5 text-slate-400"
+                className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-400 dark:text-slate-500"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="aspect-[9/19] w-full bg-[#080B11] rounded-lg border border-[#1A2133] flex items-center justify-center overflow-hidden relative">
+            <div className="aspect-[9/19] w-full bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center overflow-hidden relative">
               {isDeviceOnline ? (
                 <img
                   key={frameTimestamp}
