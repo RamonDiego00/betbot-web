@@ -281,7 +281,7 @@ export interface BetWorkerJsonResponse {
 
 // --- Histórico (Tickets) ---
 
-export type TicketHistoryPeriod = 'daily' | 'weekly' | 'monthly' | 'custom';
+export type TicketHistoryPeriod = 'daily' | 'yesterday' | 'weekly' | 'monthly' | 'custom';
 
 // Shape real de GET /api/v1/tickets/history (granularidade de 1 linha por TICKET,
 // não por perna/mercado — não existe paginação nesse endpoint).

@@ -15,7 +15,7 @@ import {
   Loader2,
   Clock,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatPeriodRangeLabel, resolvePeriodRangeForDisplay, type PeriodPreset } from '@/lib/utils';
 import { ticketService } from '@/lib/api/services/ticket';
 import { dashboardService } from '@/lib/api/services/dashboard';
 import { TicketHistoryItem, DashboardSummary } from '@/types/api';
@@ -38,8 +38,6 @@ const StatCard = ({ label, value, icon: Icon, color, bg }: { label: string; valu
     </div>
   </div>
 );
-
-type PeriodPreset = 'daily' | 'weekly' | 'monthly' | 'custom';
 
 export default function Historico() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -109,6 +107,8 @@ export default function Historico() {
     ticket.ticketId.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const displayRange = resolvePeriodRangeForDisplay(periodPreset, customRange);
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
       {/* Header */}
@@ -129,6 +129,10 @@ export default function Historico() {
             />
           </div>
 
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+            {formatPeriodRangeLabel(displayRange)}
+          </span>
+
           <button
             type="button"
             onClick={() => handlePresetChange('daily')}
@@ -140,6 +144,18 @@ export default function Historico() {
             )}
           >
             Hoje
+          </button>
+          <button
+            type="button"
+            onClick={() => handlePresetChange('yesterday')}
+            className={cn(
+              "px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm border",
+              periodPreset === 'yesterday' && !customRange
+                ? "bg-brand-600 border-brand-600 text-white"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+            )}
+          >
+            Ontem
           </button>
           <button
             type="button"

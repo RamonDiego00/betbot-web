@@ -26,7 +26,7 @@ import {
   Tooltip,
   TooltipContentProps,
 } from 'recharts';
-import { cn } from '@/lib/utils';
+import { cn, formatPeriodRangeLabel, resolvePeriodRangeForDisplay, type PeriodPreset } from '@/lib/utils';
 import { financeiroService } from '@/lib/api/services/financeiro';
 import { dashboardService } from '@/lib/api/services/dashboard';
 import {
@@ -36,8 +36,6 @@ import {
   TopMercadoItem,
   FluxoCaixaItem,
 } from '@/types/api';
-
-type PeriodPreset = 'daily' | 'weekly' | 'monthly' | 'custom';
 
 function formatDateShort(isoDate: string): string {
   const [, month, day] = isoDate.split('-');
@@ -241,6 +239,8 @@ export default function Financeiro() {
 
   const waterfallData = fluxoCaixa ? buildWaterfallData(fluxoCaixa) : [];
 
+  const displayRange = resolvePeriodRangeForDisplay(periodPreset, customRange);
+
   if (constantLoading && periodLoading) {
     return (
       <div className="h-[60vh] flex items-center justify-center">
@@ -259,6 +259,9 @@ export default function Financeiro() {
         </div>
 
         <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+            {formatPeriodRangeLabel(displayRange)}
+          </span>
           <button
             type="button"
             onClick={() => handlePresetChange('daily')}
@@ -270,6 +273,18 @@ export default function Financeiro() {
             )}
           >
             Hoje
+          </button>
+          <button
+            type="button"
+            onClick={() => handlePresetChange('yesterday')}
+            className={cn(
+              "px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm border",
+              periodPreset === 'yesterday' && !customRange
+                ? "bg-brand-600 border-brand-600 text-white"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+            )}
+          >
+            Ontem
           </button>
           <button
             type="button"
