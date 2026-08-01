@@ -14,16 +14,102 @@ import {
   Minus,
   Loader2,
   Clock,
+  ChevronDown,
 } from 'lucide-react';
 import { cn, formatPeriodRangeLabel, resolvePeriodRangeForDisplay, type PeriodPreset } from '@/lib/utils';
 import { ticketService } from '@/lib/api/services/ticket';
 import { dashboardService } from '@/lib/api/services/dashboard';
-import { TicketHistoryItem, DashboardSummary } from '@/types/api';
+import { TicketHistoryItem, TicketLeg, DashboardSummary } from '@/types/api';
 
 function formatDateBR(isoDate: string): string {
   const [year, month, day] = isoDate.split('-');
   return `${day}/${month}/${year}`;
 }
+
+function shortTicketId(ticketId: string): string {
+  return `#${ticketId.slice(-8)}`;
+}
+
+// Confrontos do ticket: prioriza `matches`, cai para os nomes distintos das `legs`.
+function ticketMatches(bet: TicketHistoryItem): string[] {
+  const fromMatches = (bet.matches ?? []).filter(Boolean);
+  if (fromMatches.length > 0) return Array.from(new Set(fromMatches));
+  return Array.from(new Set((bet.legs ?? []).map((leg) => leg.match).filter(Boolean)));
+}
+
+// Rótulo principal da linha. Sem dado de confronto, mantém o id curto (comportamento antigo).
+function ticketLabel(bet: TicketHistoryItem): { title: string; extraMatches: number; isFallback: boolean } {
+  const matches = ticketMatches(bet);
+  if (matches.length === 0) {
+    return { title: shortTicketId(bet.ticketId), extraMatches: 0, isFallback: true };
+  }
+  return { title: matches[0], extraMatches: matches.length - 1, isFallback: false };
+}
+
+function groupLegsByMatch(legs: TicketLeg[]): { match: string; legs: TicketLeg[] }[] {
+  const groups: { match: string; legs: TicketLeg[] }[] = [];
+  legs.forEach((leg) => {
+    const key = leg.match || 'Confronto não identificado';
+    const existing = groups.find((group) => group.match === key);
+    if (existing) existing.legs.push(leg);
+    else groups.push({ match: key, legs: [leg] });
+  });
+  return groups;
+}
+
+function legDescription(leg: TicketLeg): string {
+  return [leg.market, leg.selection, leg.period, leg.teamFilter].filter(Boolean).join(' · ');
+}
+
+const TicketDetails = ({ bet }: { bet: TicketHistoryItem }) => {
+  const groups = groupLegsByMatch(bet.legs ?? []);
+
+  return (
+    <div className="space-y-3">
+      {groups.length === 0 ? (
+        <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+          Detalhe indisponível para este dia.
+        </p>
+      ) : (
+        groups.map((group) => (
+          <div key={group.match} className="space-y-1.5">
+            <p className="text-[11px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-tighter break-words">
+              {group.match}
+            </p>
+            <ul className="space-y-1 pl-3 border-l-2 border-slate-200 dark:border-slate-800">
+              {group.legs.map((leg, idx) => (
+                <li key={`${group.match}-${idx}`} className="text-[11px] font-bold text-slate-600 dark:text-slate-300 break-words">
+                  {legDescription(leg)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      )}
+      <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+        Ticket {shortTicketId(bet.ticketId)}
+      </p>
+    </div>
+  );
+};
+
+const ResultBadge = ({ result }: { result: TicketHistoryItem['result'] }) => (
+  <span className={cn(
+    "shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm",
+    result === 'WIN' ? "text-emerald-700 dark:text-emerald-400" :
+    result === 'LOSS' ? "text-rose-700 dark:text-rose-400" :
+    result === 'VOID' ? "text-slate-500 dark:text-slate-400" :
+    "text-amber-600 dark:text-amber-400"
+  )}>
+    {result === 'WIN' ? <ArrowUpRight className="h-3 w-3" /> :
+     result === 'LOSS' ? <ArrowDownRight className="h-3 w-3" /> :
+     result === 'VOID' ? <Minus className="h-3 w-3" /> :
+     <Clock className="h-3 w-3" />}
+    {result === 'WIN' ? 'Win' :
+     result === 'LOSS' ? 'Loss' :
+     result === 'VOID' ? 'Void' : 'Pending'}
+  </span>
+);
 
 // --- COMPONENTES AUXILIARES ---
 
@@ -45,6 +131,18 @@ export default function Historico() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [expandedTickets, setExpandedTickets] = useState<Record<string, boolean>>({});
+
+  const toggleTicket = (ticketId: string) => {
+    setExpandedTickets((prev) => ({ ...prev, [ticketId]: !prev[ticketId] }));
+  };
+
+  const handleRowKeyDown = (event: React.KeyboardEvent, ticketId: string) => {
+    if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+      event.preventDefault();
+      toggleTicket(ticketId);
+    }
+  };
 
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>('daily');
   const [customRange, setCustomRange] = useState<{ start: string; end: string } | null>(null);
@@ -64,6 +162,7 @@ export default function Historico() {
         dashboardService.getSummary(summaryParams),
       ]);
       setTickets(historyData.tickets);
+      setExpandedTickets({});
       setSummary(summaryData);
     } catch (error) {
       console.error('Error fetching history data:', error);
@@ -103,9 +202,12 @@ export default function Historico() {
     { label: 'Lucro Total', value: `R$ ${summary.monthlyProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: Trophy, color: 'text-amber-500 dark:text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/20' },
   ] : [];
 
-  const filteredTickets = tickets.filter((ticket) =>
-    ticket.ticketId.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredTickets = tickets.filter((ticket) => {
+    if (!normalizedSearch) return true;
+    if (ticket.ticketId.toLowerCase().includes(normalizedSearch)) return true;
+    return ticketMatches(ticket).some((match) => match.toLowerCase().includes(normalizedSearch));
+  });
 
   const displayRange = resolvePeriodRangeForDisplay(periodPreset, customRange);
 
@@ -122,7 +224,7 @@ export default function Historico() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
             <input
               type="text"
-              placeholder="Buscar por ID do ticket..."
+              placeholder="Buscar por time ou ID do ticket..."
               className="pl-9 pr-4 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all w-full md:w-64 text-slate-900 dark:text-slate-100"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -275,7 +377,7 @@ export default function Historico() {
                   <thead>
                     <tr className="bg-slate-50/50 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800">
                       <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Data</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Ticket</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Confronto</th>
                       <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Valor Apostado</th>
                       <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Resultado</th>
                       <th className="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Lucro/Perda</th>
@@ -286,43 +388,65 @@ export default function Historico() {
                       <tr>
                         <td colSpan={5} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400 text-xs font-black uppercase italic">Nenhuma aposta encontrada.</td>
                       </tr>
-                    ) : filteredTickets.map((bet) => (
-                      <tr key={bet.ticketId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group cursor-default">
-                        <td className="px-6 py-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase">
+                    ) : filteredTickets.map((bet) => {
+                      const label = ticketLabel(bet);
+                      const isExpanded = !!expandedTickets[bet.ticketId];
+                      return (
+                      <React.Fragment key={bet.ticketId}>
+                      <tr
+                        role="button"
+                        tabIndex={0}
+                        aria-expanded={isExpanded}
+                        onClick={() => toggleTicket(bet.ticketId)}
+                        onKeyDown={(e) => handleRowKeyDown(e, bet.ticketId)}
+                        className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500/40"
+                      >
+                        <td className="px-6 py-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase whitespace-nowrap">
                           {formatDateBR(bet.date)}
                         </td>
                         <td className="px-6 py-4">
-                          <span className="text-[10px] font-black text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded uppercase tracking-tighter">
-                            #{bet.ticketId.slice(-8)}
-                          </span>
+                          <div className="flex items-center gap-2 min-w-0" title={`Ticket ${shortTicketId(bet.ticketId)}`}>
+                            <ChevronDown className={cn(
+                              "h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500 transition-transform",
+                              isExpanded && "rotate-180"
+                            )} />
+                            <span className={cn(
+                              "line-clamp-1 break-all max-w-[220px] lg:max-w-[320px]",
+                              label.isFallback
+                                ? "text-[10px] font-black text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded uppercase tracking-tighter"
+                                : "text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-tighter"
+                            )}>
+                              {label.title}
+                            </span>
+                            {label.extraMatches > 0 && (
+                              <span className="shrink-0 text-[10px] font-black text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                                +{label.extraMatches}
+                              </span>
+                            )}
+                          </div>
                         </td>
-                        <td className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400">R$ {bet.amountWagered.toFixed(2)}</td>
+                        <td className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">R$ {bet.amountWagered.toFixed(2)}</td>
                         <td className="px-6 py-4">
-                          <span className={cn(
-                            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm",
-                            bet.result === 'WIN' ? "text-emerald-700 dark:text-emerald-400" :
-                            bet.result === 'LOSS' ? "text-rose-700 dark:text-rose-400" :
-                            bet.result === 'VOID' ? "text-slate-500 dark:text-slate-400" :
-                            "text-amber-600 dark:text-amber-400"
-                          )}>
-                            {bet.result === 'WIN' ? <ArrowUpRight className="h-3 w-3" /> :
-                             bet.result === 'LOSS' ? <ArrowDownRight className="h-3 w-3" /> :
-                             bet.result === 'VOID' ? <Minus className="h-3 w-3" /> :
-                             <Clock className="h-3 w-3" />}
-                            {bet.result === 'WIN' ? 'Win' :
-                             bet.result === 'LOSS' ? 'Loss' :
-                             bet.result === 'VOID' ? 'Void' : 'Pending'}
-                          </span>
+                          <ResultBadge result={bet.result} />
                         </td>
                         <td className={cn(
-                          "px-6 py-4 text-right text-xs font-black",
+                          "px-6 py-4 text-right text-xs font-black whitespace-nowrap",
                           bet.result === 'WIN' ? "text-emerald-700 dark:text-emerald-400" :
                           bet.result === 'LOSS' ? "text-rose-700 dark:text-rose-400" : "text-slate-400 dark:text-slate-500"
                         )}>
                           {bet.result === 'WIN' ? '+' : ''}R$ {bet.profitLoss.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                       </tr>
-                    ))}
+                      {isExpanded && (
+                        <tr className="bg-slate-50/50 dark:bg-slate-950/40">
+                          <td colSpan={5} className="px-6 pt-1 pb-5">
+                            <TicketDetails bet={bet} />
+                          </td>
+                        </tr>
+                      )}
+                      </React.Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -331,47 +455,64 @@ export default function Historico() {
             <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
               {filteredTickets.length === 0 ? (
                 <div className="px-6 py-12 text-center text-slate-500 dark:text-slate-400 text-xs font-black uppercase italic">Nenhuma aposta encontrada.</div>
-              ) : filteredTickets.map((bet) => (
-                <div key={bet.ticketId} className="px-4 py-4 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-tighter truncate">#{bet.ticketId.slice(-8)}</span>
-                    <span className={cn(
-                      "shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm",
-                      bet.result === 'WIN' ? "text-emerald-700 dark:text-emerald-400" :
-                      bet.result === 'LOSS' ? "text-rose-700 dark:text-rose-400" :
-                      bet.result === 'VOID' ? "text-slate-500 dark:text-slate-400" :
-                      "text-amber-600 dark:text-amber-400"
-                    )}>
-                      {bet.result === 'WIN' ? <ArrowUpRight className="h-3 w-3" /> :
-                       bet.result === 'LOSS' ? <ArrowDownRight className="h-3 w-3" /> :
-                       bet.result === 'VOID' ? <Minus className="h-3 w-3" /> :
-                       <Clock className="h-3 w-3" />}
-                      {bet.result === 'WIN' ? 'Win' :
-                       bet.result === 'LOSS' ? 'Loss' :
-                       bet.result === 'VOID' ? 'Void' : 'Pending'}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Valor Apostado</p>
-                      <p className="text-xs font-bold text-slate-500 dark:text-slate-400">R$ {bet.amountWagered.toFixed(2)}</p>
+              ) : filteredTickets.map((bet) => {
+                const label = ticketLabel(bet);
+                const isExpanded = !!expandedTickets[bet.ticketId];
+                return (
+                <div key={bet.ticketId}>
+                  <button
+                    type="button"
+                    aria-expanded={isExpanded}
+                    onClick={() => toggleTicket(bet.ticketId)}
+                    className="w-full text-left px-4 py-4 space-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500/40 active:bg-slate-50/50 dark:active:bg-slate-800/30"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <ChevronDown className={cn(
+                          "h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500 transition-transform",
+                          isExpanded && "rotate-180"
+                        )} />
+                        <span className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-tighter line-clamp-1 break-all">
+                          {label.title}
+                        </span>
+                        {label.extraMatches > 0 && (
+                          <span className="shrink-0 text-[10px] font-black text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                            +{label.extraMatches}
+                          </span>
+                        )}
+                      </div>
+                      <ResultBadge result={bet.result} />
                     </div>
-                    <div>
-                      <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Lucro/Perda</p>
-                      <p className={cn(
-                        "text-xs font-black",
-                        bet.result === 'WIN' ? "text-emerald-700 dark:text-emerald-400" :
-                        bet.result === 'LOSS' ? "text-rose-700 dark:text-rose-400" : "text-slate-400 dark:text-slate-500"
-                      )}>
-                        {bet.result === 'WIN' ? '+' : ''}R$ {bet.profitLoss.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="min-w-0">
+                        <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Valor Apostado</p>
+                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400">R$ {bet.amountWagered.toFixed(2)}</p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Lucro/Perda</p>
+                        <p className={cn(
+                          "text-xs font-black",
+                          bet.result === 'WIN' ? "text-emerald-700 dark:text-emerald-400" :
+                          bet.result === 'LOSS' ? "text-rose-700 dark:text-rose-400" : "text-slate-400 dark:text-slate-500"
+                        )}>
+                          {bet.result === 'WIN' ? '+' : ''}R$ {bet.profitLoss.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
-                    {formatDateBR(bet.date)}
-                  </p>
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                      {formatDateBR(bet.date)}
+                    </p>
+                  </button>
+                  {isExpanded && (
+                    <div className="px-4 pb-4 bg-slate-50/50 dark:bg-slate-950/40">
+                      <div className="pt-3">
+                        <TicketDetails bet={bet} />
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
             </>
           )}

@@ -20,7 +20,12 @@ export const ticketService = {
     const response = await apiClient.get<TicketHistoryResponse>('/api/v1/tickets/history', { params });
     const data = response.data;
     return {
-      tickets: data.tickets ?? [],
+      // `matches`/`legs` podem vir ausentes ou null (dias sem cache no servidor) — normaliza para array.
+      tickets: (data.tickets ?? []).map((ticket) => ({
+        ...ticket,
+        matches: ticket.matches ?? [],
+        legs: ticket.legs ?? [],
+      })),
       totalTickets: data.totalTickets ?? 0,
       period: data.period ?? period,
     };

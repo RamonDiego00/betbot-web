@@ -283,6 +283,16 @@ export interface BetWorkerJsonResponse {
 
 export type TicketHistoryPeriod = 'daily' | 'yesterday' | 'weekly' | 'monthly' | 'custom';
 
+// Perna (selection) de um ticket do histórico.
+// Só existe para dias com cache no servidor — pode não vir.
+export interface TicketLeg {
+  match: string; // "Mirassol v Remo"
+  market: string; // "Escanteios"
+  selection: string; // "Mais de 3"
+  period: string | null; // "Partida" | "1º Tempo" | "2º Tempo"
+  teamFilter: string | null; // "Remo" | "Ambos os Times Combinados"
+}
+
 // Shape real de GET /api/v1/tickets/history (granularidade de 1 linha por TICKET,
 // não por perna/mercado — não existe paginação nesse endpoint).
 export interface TicketHistoryItem {
@@ -291,6 +301,9 @@ export interface TicketHistoryItem {
   amountWagered: number;
   result: 'WIN' | 'LOSS' | 'VOID' | 'PENDING';
   profitLoss: number;
+  // Opcionais: dias antigos (sem cache no servidor) vêm sem eles ou vazios.
+  matches?: string[];
+  legs?: TicketLeg[];
 }
 
 export interface TicketHistoryResponse {
